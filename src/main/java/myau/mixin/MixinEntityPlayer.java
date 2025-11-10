@@ -3,9 +3,11 @@ package myau.mixin;
 import myau.Myau;
 import myau.module.modules.KeepSprint;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.inventory.Container;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Constant;
 import org.spongepowered.asm.mixin.injection.ModifyConstant;
@@ -14,6 +16,7 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 @SideOnly(Side.CLIENT)
 @Mixin({EntityPlayer.class})
 public abstract class MixinEntityPlayer extends MixinEntityLivingBase {
+    @Shadow public Container openContainer;
     @ModifyConstant(
             method = {"attackTargetEntityWithCurrentItem"},
             constant = {@Constant(

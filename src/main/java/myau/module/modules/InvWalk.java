@@ -5,6 +5,7 @@ import myau.Myau;
 import myau.event.EventTarget;
 import myau.event.types.EventType;
 import myau.event.types.Priority;
+import myau.events.CloseScreenEvent;
 import myau.events.PacketEvent;
 import myau.events.TickEvent;
 import myau.events.UpdateEvent;
@@ -25,8 +26,6 @@ import net.minecraft.network.play.client.C0DPacketCloseWindow;
 import net.minecraft.network.play.client.C0EPacketClickWindow;
 import net.minecraft.network.play.client.C16PacketClientStatus;
 import net.minecraft.network.play.client.C16PacketClientStatus.EnumState;
-import net.minecraft.network.play.server.S2DPacketOpenWindow;
-import net.minecraft.network.play.server.S2EPacketCloseWindow;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -50,6 +49,7 @@ public class InvWalk extends Module {
         put(mc.gameSettings.keyBindSneak, false);
         put(mc.gameSettings.keyBindSprint, false);
     }};
+    private boolean waitClose = false;
 
     public final ModeProperty mode = new ModeProperty("mode", 1, new String[]{"VANILLA", "LEGIT", "HYPIXEL", "KEEPMOVE"});
     public final BooleanProperty guiEnabled = new BooleanProperty("ClickGUI", true);
@@ -114,10 +114,21 @@ public class InvWalk extends Module {
                 return this.clickQueue.isEmpty();
             case 3: // KeepMove
                 if (!(mc.currentScreen instanceof GuiInventory)) return false;
-                return this.closeDelayTicks == -1 && this.clickQueue.isEmpty();
+                return this.clickQueue.isEmpty();
             default:
                 return false;
         }
+    }
+
+    @EventTarget
+    public void onGuiClose(CloseScreenEvent event) {
+        if (event.getWindowId() == 0) {
+            if (this.closeDelayTicks >= 0) {
+                event.setCancelled(true);
+                this.waitClose = true;
+            }
+        }
+        ChatUtil.sendFormatted(String.format("%s%s: &conGuiClose %d&r", Myau.clientName, this.getName(), event.getWindowId()));
     }
 
     @EventTarget(Priority.LOWEST)
@@ -136,10 +147,16 @@ public class InvWalk extends Module {
                     this.closeDelayTicks--;
                 }
             } else if (this.closeDelayTicks == 0) {
-                if (mc.currentScreen instanceof GuiInventory)
-                    PacketUtil.sendPacketNoEvent(new C0DPacketCloseWindow(0));
                 this.closeDelayTicks = -1;
-                ChatUtil.sendFormatted(String.format("%s%s: &cclose inv&r", Myau.clientName, this.getName()));
+                if (mc.currentScreen instanceof GuiInventory) {
+                    if (this.waitClose) {
+                        this.waitClose = false;
+                        mc.thePlayer.closeScreen();
+                    } else {
+                        PacketUtil.sendPacketNoEvent(new C0DPacketCloseWindow(0));
+                        ChatUtil.sendFormatted(String.format("%s%s: &cclose inv&r", Myau.clientName, this.getName()));
+                    }
+                }
             }
         }
     }
@@ -153,7 +170,7 @@ public class InvWalk extends Module {
             return;
         }
 
-        if (this.canInvWalk() && this.delayTicks == 0) {
+        if (this.canInvWalk() && this.delayTicks == 0 && this.closeDelayTicks < 0) {
             if (this.isSetMovementKeys() && this.lockMoveKey.getValue()) {
                 this.restoreMovementKeys();
             } else {
@@ -201,20 +218,7 @@ public class InvWalk extends Module {
             if (event.getPacket() instanceof C0DPacketCloseWindow) {
                 C0DPacketCloseWindow packet = (C0DPacketCloseWindow) event.getPacket();
                 if (((IAccessorC0DPacketCloseWindow) packet).getWindowId() == 0) {
-                    if (this.mode.getValue() == 3) {
-                        if (!this.clickQueue.isEmpty()) {
-                            this.clickQueue.clear();
-                        }
-                        if (this.openDelayTicks >= 0) {
-                            this.openDelayTicks = -1;
-                        }
-                        if (this.closeDelayTicks >= 0) {
-                            ChatUtil.sendFormatted(String.format("%s%s: &cclose inv native 1&r", Myau.clientName, this.getName()));
-                            this.closeDelayTicks = -1;
-                        } else {
-                            event.setCancelled(true);
-                        }
-                    } else if (this.pendingStatus != null) {
+                    if (this.pendingStatus != null) {
                         this.pendingStatus = null;
                         event.setCancelled(true);
                     } else {

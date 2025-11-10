@@ -3,14 +3,12 @@ package myau.mixin;
 import myau.Myau;
 import myau.event.EventManager;
 import myau.event.types.EventType;
-import myau.events.LivingUpdateEvent;
-import myau.events.MoveInputEvent;
-import myau.events.PlayerUpdateEvent;
-import myau.events.UpdateEvent;
+import myau.events.*;
 import myau.management.RotationState;
 import myau.module.modules.AntiDebuff;
 import myau.module.modules.NoSlow;
 import net.minecraft.client.entity.EntityPlayerSP;
+import net.minecraft.inventory.Container;
 import net.minecraft.potion.Potion;
 import net.minecraft.util.BlockPos;
 import net.minecraft.util.MathHelper;
@@ -19,6 +17,7 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.gen.Accessor;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -163,5 +162,18 @@ public abstract class MixinEntityPlayerSP extends MixinEntityPlayer {
             }
         }
         return ((IAccessorEntityLivingBase) entityPlayerSP).getActivePotionsMap().containsKey(potion.id);
+    }
+
+    @Inject(
+            method = {"closeScreen"},
+            at = {@At("HEAD")},
+            cancellable = true
+    )
+    public void closeScreen(CallbackInfo ci) {
+        CloseScreenEvent event = new CloseScreenEvent(this.openContainer.windowId);
+        EventManager.call(event);
+        if (event.isCancelled()) {
+            ci.cancel();
+        }
     }
 }
