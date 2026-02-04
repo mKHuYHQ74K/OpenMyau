@@ -47,6 +47,11 @@ public class Timer extends Module {
                     if (k == this.key) {
                         EventManager.call(new KeyEvent(this.key));
                     }
+                    for (int i = 0; i < 9; i++) {
+                        if (mc.gameSettings.keyBindsHotbar[i].getKeyCode() == k) {
+                            mc.thePlayer.inventory.currentItem = i;
+                        }
+                    }
                 }
             }
         }
