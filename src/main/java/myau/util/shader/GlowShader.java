@@ -29,9 +29,7 @@ public class GlowShader extends Shader {
     @Override
     public void onUse() {
         GL20.glUseProgram(this.programId);
-        int texLoc = this.getUniformLocationCached("texture");
-        GL20.glUniform1i(texLoc, 0);
-        GL20.glUniform4f(texLoc, 1.0f, 1.0f, 1.0f, 1.0f);
+        GL20.glUniform1i(this.getUniformLocationCached("texture"), 0);
     }
 
     public void W(Color color) {
