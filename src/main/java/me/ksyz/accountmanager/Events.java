@@ -4,6 +4,8 @@ import me.ksyz.accountmanager.auth.Account;
 import me.ksyz.accountmanager.auth.SessionManager;
 import me.ksyz.accountmanager.gui.GuiAccountManager;
 import me.ksyz.accountmanager.utils.TextFormatting;
+import myau.Myau;
+import myau.module.modules.NickHider;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiDisconnected;
@@ -38,9 +40,14 @@ public class Events {
         }
 
         if (mc.currentScreen instanceof GuiSelectWorld || mc.currentScreen instanceof GuiMultiplayer) {
-            String text = TextFormatting.translate(String.format(
-                    "&7Username: &3%s&r", SessionManager.get().getUsername()
-            ));
+            String text;
+            if (Myau.moduleManager.modules.get(NickHider.class).isEnabled()) {
+                text = TextFormatting.translate("&7NickHider: &3Enabled&r");
+            } else {
+                text = TextFormatting.translate(String.format(
+                        "&7Username: &3%s&r", SessionManager.get().getUsername()
+                ));
+            }
             GlStateManager.disableLighting();
             mc.currentScreen.drawString(mc.fontRendererObj, text, 3, 3, -1);
             GlStateManager.enableLighting();
