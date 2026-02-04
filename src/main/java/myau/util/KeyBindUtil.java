@@ -38,7 +38,7 @@ public class KeyBindUtil {
     }
 
     public static void updateKeyState(int keyCode) {
-        KeyBindUtil.setKeyBindState(keyCode, keyCode < 0 ? Mouse.isButtonDown(keyCode + 100) : Keyboard.isKeyDown(keyCode));
+        KeyBindUtil.setKeyBindState(keyCode, isKeyDown(keyCode));
     }
 
     public static void setKeyBindState(int keyCode, boolean pressed) {

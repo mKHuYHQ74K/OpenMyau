@@ -1,6 +1,8 @@
 package myau.module.modules;
 
+import myau.event.EventManager;
 import myau.event.EventTarget;
+import myau.events.KeyEvent;
 import myau.events.Render2DEvent;
 import myau.mixin.IAccessorMinecraft;
 import myau.module.Module;
@@ -28,14 +30,14 @@ public class Timer extends Module {
     public void onRender(Render2DEvent event) {
         if (this.isEnabled() && this.speed.getValue() == 0) {
             if (mc.currentScreen != null) {
-                this.setEnabled(false);
+                this.toggle();
                 return;
             }
             while (Mouse.next()) {
                 if (Mouse.getEventButtonState()) {
                     int i = Mouse.getEventButton() - 100;
                     if (i == this.key) {
-                        this.setEnabled(false);
+                        EventManager.call(new KeyEvent(this.key));
                     }
                 }
             }
@@ -43,7 +45,7 @@ public class Timer extends Module {
                 if (Keyboard.getEventKeyState()) {
                     int k = Keyboard.getEventKey() == 0 ? Keyboard.getEventCharacter() + 256 : Keyboard.getEventKey();
                     if (k == this.key) {
-                        this.setEnabled(false);
+                        EventManager.call(new KeyEvent(this.key));
                     }
                 }
             }
@@ -53,7 +55,7 @@ public class Timer extends Module {
     @Override
     public void onEnabled() {
         if (this.speed.getValue() == 0.0f && this.key == 0 && mc.currentScreen == null) {
-            this.setEnabled(false);
+            this.toggle();
         } else {
             this.timer.timerSpeed = this.speed.getValue();
         }

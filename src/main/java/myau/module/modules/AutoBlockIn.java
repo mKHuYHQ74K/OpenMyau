@@ -10,9 +10,11 @@ import myau.property.properties.BooleanProperty;
 import myau.property.properties.FloatProperty;
 import myau.property.properties.IntProperty;
 import myau.property.properties.ModeProperty;
+import myau.util.KeyBindUtil;
 import myau.util.MoveUtil;
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.init.Blocks;
@@ -38,6 +40,7 @@ public class AutoBlockIn extends Module {
     public final BooleanProperty itemSpoof = new BooleanProperty("item-spoof", true);
     public final BooleanProperty showProgress = new BooleanProperty("show-progress", true);
     public final ModeProperty moveFix = new ModeProperty("move-fix", 1, new String[]{"NONE", "SILENT", "STRICT"});
+    public final BooleanProperty close = new BooleanProperty("close", true);
     
     private float serverYaw;
     private float serverPitch;
@@ -48,6 +51,8 @@ public class AutoBlockIn extends Module {
     private EnumFacing targetFacing;
     private Vec3 targetHitVec;
     private int lastSlot = -1;
+    private boolean onCenterPlayer = false;
+    private boolean needJump = false;
     
     private static final int[][] DIRS = {{1,0,0}, {0,0,1}, {-1,0,0}, {0,0,-1}};
     private static final double INSET = 0.05;
@@ -81,6 +86,7 @@ public class AutoBlockIn extends Module {
             targetFacing = null;
             targetHitVec = null;
             lastPlaceTime = 0;
+            onCenterPlayer = true;
         }
     }
 
@@ -104,7 +110,9 @@ public class AutoBlockIn extends Module {
         if (mc.currentScreen != null) {
             return;
         }
-        
+
+        if (onCenterPlayer) return;
+
         serverYaw = event.getYaw();
         serverPitch = event.getPitch();
         
@@ -167,7 +175,52 @@ public class AutoBlockIn extends Module {
             }
         }
     }
-    
+
+    @EventTarget
+    public void onLivingUpdate(LivingUpdateEvent event) {
+        if (this.isEnabled()) {
+            EntityPlayerSP player = mc.thePlayer;
+            if (player == null) {
+                onCenterPlayer = false;
+                return;
+            }
+
+            if (this.needJump) {
+                player.movementInput.jump = true;
+                this.needJump = false;
+            }
+
+            BlockPos blockPos = new BlockPos(player.posX, player.posY, player.posZ);
+            double dx = (blockPos.getX() + 0.5) - player.posX;
+            double dz = (blockPos.getZ() + 0.5) - player.posZ;
+
+            if (Math.abs(dx) < 0.2 && Math.abs(dz) < 0.2) {
+                player.movementInput.moveForward = 0f;
+                player.movementInput.moveStrafe = 0f;
+                onCenterPlayer = false;
+                return;
+            }
+
+            boolean sneak = player.movementInput.sneak;
+
+            double speed = sneak ? 0.3 : 1.0;
+
+            float yawRad = (float) Math.toRadians(player.rotationYaw);
+            double sinYaw = Math.sin(yawRad);
+            double cosYaw = Math.cos(yawRad);
+
+            double worldF =  dx * -sinYaw + dz * cosYaw;
+            double worldS =  dx *  cosYaw + dz * sinYaw;
+
+            int forwardDir = Double.compare(worldF, 0.0);
+            int strafeDir  = Double.compare(worldS, 0.0);
+
+            player.movementInput.moveForward = (float)(forwardDir * speed);
+            player.movementInput.moveStrafe  = (float)(strafeDir  * speed);
+            onCenterPlayer = true;
+        }
+    }
+
     @EventTarget(Priority.HIGH)
     public void onTick(TickEvent event) {
         if (!isEnabled()) return;
@@ -177,7 +230,7 @@ public class AutoBlockIn extends Module {
         if (mc.currentScreen != null) {
             return;
         }
-        
+
         if (targetBlock != null && targetFacing != null && targetHitVec != null) {
             if (!withinRotationTolerance(aimYaw, aimPitch)) {
                 return;
@@ -337,6 +390,7 @@ public class AutoBlockIn extends Module {
                 return;
             }
         }
+        this.needJump = true;
         Queue<BlockPos> q = new LinkedList<>();
         Map<BlockPos, BlockPos> parent = new HashMap<>();
         Set<BlockPos> visited = new HashSet<>();
@@ -588,6 +642,10 @@ public class AutoBlockIn extends Module {
         }
         
         progress = (float) filled / (float) total;
+
+        if (this.close.getValue() && progress == 1.0f) {
+            this.toggle();
+        }
     }
 
     private Color getProgressColor() {
@@ -637,7 +695,7 @@ public class AutoBlockIn extends Module {
     }
 
     private double clamp(double v, double lo, double hi) {
-        return v < lo ? lo : (v > hi ? hi : v);
+        return Math.max(lo, Math.min(v, hi));
     }
 
     private float[] getRotationsWrapped(Vec3 eye, double tx, double ty, double tz) {
