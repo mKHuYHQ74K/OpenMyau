@@ -36,17 +36,13 @@ public class Timer extends Module {
             while (Mouse.next()) {
                 if (Mouse.getEventButtonState()) {
                     int i = Mouse.getEventButton() - 100;
-                    if (i == this.key) {
-                        EventManager.call(new KeyEvent(this.key));
-                    }
+                    EventManager.call(new KeyEvent(i));
                 }
             }
             while (Keyboard.next()) {
                 if (Keyboard.getEventKeyState()) {
                     int k = Keyboard.getEventKey() == 0 ? Keyboard.getEventCharacter() + 256 : Keyboard.getEventKey();
-                    if (k == this.key) {
-                        EventManager.call(new KeyEvent(this.key));
-                    }
+                    EventManager.call(new KeyEvent(k));
                     for (int i = 0; i < 9; i++) {
                         if (mc.gameSettings.keyBindsHotbar[i].getKeyCode() == k) {
                             mc.thePlayer.inventory.currentItem = i;

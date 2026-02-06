@@ -41,6 +41,7 @@ public class AutoBlockIn extends Module {
     public final BooleanProperty showProgress = new BooleanProperty("show-progress", true);
     public final ModeProperty moveFix = new ModeProperty("move-fix", 1, new String[]{"NONE", "SILENT", "STRICT"});
     public final BooleanProperty close = new BooleanProperty("close", true);
+    public final BooleanProperty jump = new BooleanProperty("jump", true);
     
     private float serverYaw;
     private float serverPitch;
@@ -52,7 +53,7 @@ public class AutoBlockIn extends Module {
     private Vec3 targetHitVec;
     private int lastSlot = -1;
     private boolean onCenterPlayer = false;
-    private boolean needJump = false;
+    private int needJump = 0;
     
     private static final int[][] DIRS = {{1,0,0}, {0,0,1}, {-1,0,0}, {0,0,-1}};
     private static final double INSET = 0.05;
@@ -87,6 +88,7 @@ public class AutoBlockIn extends Module {
             targetHitVec = null;
             lastPlaceTime = 0;
             onCenterPlayer = true;
+            needJump = 0;
         }
     }
 
@@ -185,16 +187,19 @@ public class AutoBlockIn extends Module {
                 return;
             }
 
-            if (this.needJump) {
+            if (!player.onGround || !this.jump.getValue()) {
+                this.needJump = 20;
+            }
+            if (this.needJump < 0) {
+                this.needJump = 20;
                 player.movementInput.jump = true;
-                this.needJump = false;
             }
 
             BlockPos blockPos = new BlockPos(player.posX, player.posY, player.posZ);
             double dx = (blockPos.getX() + 0.5) - player.posX;
             double dz = (blockPos.getZ() + 0.5) - player.posZ;
 
-            if (Math.abs(dx) < 0.2 && Math.abs(dz) < 0.2) {
+            if (Math.abs(dx) <= 0.12 && Math.abs(dz) <= 0.12) {
                 player.movementInput.moveForward = 0f;
                 player.movementInput.moveStrafe = 0f;
                 onCenterPlayer = false;
@@ -390,7 +395,7 @@ public class AutoBlockIn extends Module {
                 return;
             }
         }
-        this.needJump = true;
+        this.needJump -= 1;
         Queue<BlockPos> q = new LinkedList<>();
         Map<BlockPos, BlockPos> parent = new HashMap<>();
         Set<BlockPos> visited = new HashSet<>();
