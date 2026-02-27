@@ -26,11 +26,14 @@ public class Radar extends Module {
     public final IntProperty offsetY = new IntProperty("offset-y", 60, 0, 1000, () -> position.getValue() != 4);
     public final IntProperty radarRadius = new IntProperty("radar-radius", 55, 10, 200);
     public final FloatProperty dotRadius = new FloatProperty("dot-radius", 1.5F, 0.1F, 5.0F);
+    public final FloatProperty radarScale = new FloatProperty("radar-scale", 1.0F, 0.1F, 5.0F);
     public final BooleanProperty showPlayers = new BooleanProperty("players", true);
     public final BooleanProperty showFriends = new BooleanProperty("friends", true);
     public final BooleanProperty showEnemies = new BooleanProperty("enemies", true);
     public final BooleanProperty showBots = new BooleanProperty("bots", false);
     public final BooleanProperty showPVP = new BooleanProperty("show-pvp", false);
+    public final FloatProperty markRange = new FloatProperty("mark-range", 4.0f, 0.0f, 10.0f);
+    public final FloatProperty markScale = new FloatProperty("mark-scale", 1.5f, 0.0f, 2.0f);
     public final ColorProperty fillColor = new ColorProperty("fill-color", Color.GRAY.getRGB(), 0x40);
     public final ColorProperty outlineColor = new ColorProperty("outline-color", Color.DARK_GRAY.getRGB());
     public final ColorProperty crossColor = new ColorProperty("cross-color", Color.LIGHT_GRAY.getRGB(), 0x80);
@@ -79,6 +82,13 @@ public class Radar extends Module {
         }
     }
 
+    public static Color getComplementaryColor(Color color) {
+        float[] hsb = Color.RGBtoHSB(color.getRed(), color.getGreen(), color.getBlue(), null);
+        float newHue = (hsb[0] + 0.5f) % 1.0f;
+        Color rgb = Color.getHSBColor(newHue, hsb[1], hsb[2]);
+        return new Color(rgb.getRed(), rgb.getGreen(), rgb.getBlue(), color.getAlpha());
+    }
+
     @EventTarget(Priority.LOWEST)
     public void onRender(Render2DEvent event) {
         if (!this.isEnabled()) return;
@@ -96,7 +106,7 @@ public class Radar extends Module {
         }
 
         GlStateManager.pushMatrix();
-        GlStateManager.scale(hud.scale.getValue(), hud.scale.getValue(), 1.0f);
+        GlStateManager.scale(1.0f, 1.0f, 1.0f);
         GlStateManager.translate(centerX, centerY, 0.0f);
 
         RenderUtil.enableRenderState();
@@ -109,21 +119,6 @@ public class Radar extends Module {
         double sin = Math.sin(yaw);
 
         this.drawRadarCircle(0.0, 0, yaw, radarRadius.getValue(), 64, fillColor.getValue(), outlineColor.getValue(), crossColor.getValue());
-        for (EntityPlayer player : TeamUtil.getLoadedEntitiesSorted().stream().filter(entity -> entity instanceof EntityPlayer && this.shouldRender((EntityPlayer) entity)).map(EntityPlayer.class::cast).collect(Collectors.toList())) {
-            double dx = (player.lastTickPosX + (player.posX - player.lastTickPosX) * event.getPartialTicks()) - mc.thePlayer.posX;
-            double dz = (player.lastTickPosZ + (player.posZ - player.lastTickPosZ) * event.getPartialTicks()) - mc.thePlayer.posZ;
-
-            double relX = dx * cos + dz * sin;
-            double relY = dz * cos - dx * sin;
-
-            double dist = Math.sqrt(relX * relX + relY * relY);
-            double scale = dist < radarRadius.getValue() ? 1.0F : radarRadius.getValue() / dist;
-            double px = relX * scale;
-            double py = relY * scale;
-
-            RenderUtil.fillCircle(px, py, dotRadius.getValue(), 12, getEntityColor(player).getRGB());
-
-        }
         if (this.showPVP.getValue()) {
             double dx = - mc.thePlayer.posX;
             double dz = - mc.thePlayer.posZ;
@@ -132,20 +127,45 @@ public class Radar extends Module {
             double relY = dz * cos - dx * sin;
 
             double dist = Math.sqrt(relX * relX + relY * relY);
-            double scale = dist < radarRadius.getValue() * 2 ? 1.0F : radarRadius.getValue() * 2 / dist;
-            double px = relX * scale;
-            double py = relY * scale;
+            double scale = dist < radarRadius.getValue() / this.radarScale.getValue() ? 1.0F : radarRadius.getValue() / this.radarScale.getValue() / dist;
+            double px = relX * scale * this.radarScale.getValue();
+            double py = relY * scale * this.radarScale.getValue();
             GlStateManager.pushMatrix();
             GlStateManager.disableDepth();
             GlStateManager.enableBlend();
             GlStateManager.enableTexture2D();
             GlStateManager.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-            GlStateManager.scale(hud.scale.getValue() / 2, hud.scale.getValue() / 2, 1.0f);
-            mc.fontRendererObj.drawString("PVP",
-                    (float) (px - mc.fontRendererObj.getStringWidth("PVP") / 2.0F),
-                    (float) (py - mc.fontRendererObj.FONT_HEIGHT / 2.0F),
-                    Color.WHITE.getRGB(), hud.shadow.getValue());
+            GlStateManager.translate(px / hud.scale.getValue(), py / hud.scale.getValue(), 0.0f);
+            GlStateManager.scale(hud.scale.getValue() / 2.0f, hud.scale.getValue() / 2.0f, 1.0f);
+            mc.fontRendererObj.drawString("PVP", -mc.fontRendererObj.getStringWidth("PVP") / 2.0f, -mc.fontRendererObj.FONT_HEIGHT / 2.0f, hud.getColor(System.currentTimeMillis()).getRGB(), hud.shadow.getValue());
             GlStateManager.popMatrix();
+        }
+        for (EntityPlayer player : TeamUtil.getLoadedEntitiesSorted().stream().filter(entity -> entity instanceof EntityPlayer && this.shouldRender((EntityPlayer) entity)).map(EntityPlayer.class::cast).collect(Collectors.toList())) {
+            double dx = (player.lastTickPosX + (player.posX - player.lastTickPosX) * event.getPartialTicks()) - mc.thePlayer.posX;
+            double dz = (player.lastTickPosZ + (player.posZ - player.lastTickPosZ) * event.getPartialTicks()) - mc.thePlayer.posZ;
+
+            double relX = dx * cos + dz * sin;
+            double relY = dz * cos - dx * sin;
+
+            double dist = Math.sqrt(relX * relX + relY * relY);
+            double scale = dist < radarRadius.getValue() / this.radarScale.getValue() ? 1.0F : radarRadius.getValue() / this.radarScale.getValue() / dist;
+            double px = relX * scale * this.radarScale.getValue();
+            double py = relY * scale * this.radarScale.getValue();
+
+            Color color1 = getEntityColor(player);
+            if (dist > this.markRange.getValue()) {
+                RenderUtil.fillCircle(px, py, dotRadius.getValue(), 12, color1.getRGB());
+            } else {
+                Color color2 = getComplementaryColor(color1);
+                double mark_scale = this.markScale.getValue();
+                if (mark_scale >= 1.0f){
+                    RenderUtil.fillCircle(px, py, dotRadius.getValue() * mark_scale, 12, color2.getRGB());
+                    RenderUtil.fillCircle(px, py, dotRadius.getValue(), 12, color1.getRGB());
+                } else {
+                    RenderUtil.fillCircle(px, py, dotRadius.getValue(), 12, color2.getRGB());
+                    RenderUtil.fillCircle(px, py, dotRadius.getValue() * mark_scale, 12, color1.getRGB());
+                }
+            }
         }
         RenderUtil.disableRenderState();
         GlStateManager.popMatrix();
@@ -213,22 +233,24 @@ public class Radar extends Module {
             GlStateManager.enableTexture2D();
             GlStateManager.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
             HUD hud = (HUD) Myau.moduleManager.modules.get(HUD.class);
+            float hud_scale = hud.scale.getValue();
+            GlStateManager.scale(hud_scale, hud_scale, 1.0f);
             int color = hud.getColor(System.currentTimeMillis()).getRGB();
             mc.fontRendererObj.drawString("N",
-                    (float) (x - dx1 * (radius + 5)) - mc.fontRendererObj.getStringWidth("N") / 2.0F,
-                    (float) (y - dy1 * (radius + 5)) - mc.fontRendererObj.FONT_HEIGHT / 2.0F,
+                    (float) (x - dx1 * (radius / hud_scale + 5)) - mc.fontRendererObj.getStringWidth("N") / 2.0F,
+                    (float) (y - dy1 * (radius / hud_scale + 5)) - mc.fontRendererObj.FONT_HEIGHT / 2.0F,
                     color, hud.shadow.getValue());
             mc.fontRendererObj.drawString("E",
-                    (float) (x + dx2 * (radius + 5)) - mc.fontRendererObj.getStringWidth("E") / 2.0F,
-                    (float) (y + dy2 * (radius + 5)) - mc.fontRendererObj.FONT_HEIGHT / 2.0F,
+                    (float) (x + dx2 * (radius / hud_scale + 5)) - mc.fontRendererObj.getStringWidth("E") / 2.0F,
+                    (float) (y + dy2 * (radius / hud_scale + 5)) - mc.fontRendererObj.FONT_HEIGHT / 2.0F,
                     color, hud.shadow.getValue());
             mc.fontRendererObj.drawString("S",
-                    (float) (x + dx1 * (radius + 5)) - mc.fontRendererObj.getStringWidth("S") / 2.0F,
-                    (float) (y + dy1 * (radius + 5)) - mc.fontRendererObj.FONT_HEIGHT / 2.0F,
+                    (float) (x + dx1 * (radius / hud_scale + 5)) - mc.fontRendererObj.getStringWidth("S") / 2.0F,
+                    (float) (y + dy1 * (radius / hud_scale + 5)) - mc.fontRendererObj.FONT_HEIGHT / 2.0F,
                     color, hud.shadow.getValue());
             mc.fontRendererObj.drawString("W",
-                    (float) (x - dx2 * (radius + 5)) - mc.fontRendererObj.getStringWidth("W") / 2.0F,
-                    (float) (y - dy2 * (radius + 5)) - mc.fontRendererObj.FONT_HEIGHT / 2.0F,
+                    (float) (x - dx2 * (radius / hud_scale + 5)) - mc.fontRendererObj.getStringWidth("W") / 2.0F,
+                    (float) (y - dy2 * (radius / hud_scale + 5)) - mc.fontRendererObj.FONT_HEIGHT / 2.0F,
                     color, hud.shadow.getValue());
             GlStateManager.disableTexture2D();
             GlStateManager.disableBlend();
