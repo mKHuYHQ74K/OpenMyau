@@ -85,7 +85,7 @@ public class Radar extends Module {
     public static Color getComplementaryColor(Color color) {
         float[] hsb = Color.RGBtoHSB(color.getRed(), color.getGreen(), color.getBlue(), null);
         float newHue = (hsb[0] + 0.5f) % 1.0f;
-        Color rgb = Color.getHSBColor(newHue, hsb[1], hsb[2]);
+        Color rgb = Color.getHSBColor(newHue, hsb[1], 1.0f - hsb[2]);
         return new Color(rgb.getRed(), rgb.getGreen(), rgb.getBlue(), color.getAlpha());
     }
 

@@ -135,7 +135,7 @@ public class MoveUtil {
         return MoveUtil.mc.thePlayer.getAIMoveSpeed() * (0.16277136f / (slipperiness * slipperiness * slipperiness));
     }
 
-    public static double[] predictMovement() {
+    public static double[] predictMovement(float offset) {
         float strafeInput = (float) MoveUtil.getLeftValue() * 0.98f;
         float forwardInput = (float) MoveUtil.getForwardValue() * 0.98f;
         float inputMagnitude = strafeInput * strafeInput + forwardInput * forwardInput;
@@ -147,6 +147,7 @@ public class MoveUtil {
             inputMagnitude = MoveUtil.getAllowedHorizontalDistance() / inputMagnitude;
             float sinYaw = MathHelper.sin(MoveUtil.mc.thePlayer.rotationYaw * (float) Math.PI / 180.0f);
             float cosYaw = MathHelper.cos(MoveUtil.mc.thePlayer.rotationYaw * (float) Math.PI / 180.0f);
+            inputMagnitude *= offset;
             strafeInput *= inputMagnitude;
             forwardInput *= inputMagnitude;
             return new double[]{strafeInput * cosYaw - forwardInput * sinYaw, forwardInput * cosYaw + strafeInput * sinYaw};

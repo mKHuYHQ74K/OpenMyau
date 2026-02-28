@@ -99,7 +99,7 @@ public class KillAura extends Module {
     public final ModeProperty debugLog;
 
     private long getAttackDelay() {
-        return this.isBlocking ? (long) (1000.0F / RandomUtil.nextLong(this.autoBlockMinCPS.getValue().longValue(), this.autoBlockMaxCPS.getValue().longValue())) : 1000L / RandomUtil.nextLong(this.minCPS.getValue(), this.maxCPS.getValue());
+        return this.isBlocking ? (long) (1000.0F / RandomUtil.nextFloat(this.autoBlockMinCPS, this.autoBlockMaxCPS)) : 1000L / RandomUtil.nextLong(this.minCPS, this.maxCPS);
     }
 
     private boolean performAttack(float yaw, float pitch) {
