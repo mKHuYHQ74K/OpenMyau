@@ -30,13 +30,12 @@ public class Eagle extends Module {
     public final BooleanProperty pitchCheck = new BooleanProperty("pitch-check", true);
     public final BooleanProperty blocksOnly = new BooleanProperty("blocks-only", true);
     public final BooleanProperty sneakOnly = new BooleanProperty("sneaking-only", false);
-    public final BooleanProperty moveCheck = new BooleanProperty("move-check", false);
     public final FloatProperty minOffset = new FloatProperty("min-offset", 0.0f, 0.0f, 9.0f);
     public final FloatProperty maxOffset = new FloatProperty("max-offset", 0.0f, 0.0f, 9.0f);
 
     private boolean canMoveSafely() {
         double[] offset = MoveUtil.predictMovement(this.sneakOffset);
-        if (this.moveCheck.getValue() && offset[0] == 0.0 && offset[1] == 0.0) return true;
+        if (this.sneakOnly.getValue() && offset[0] == 0.0 && offset[1] == 0.0) return true;
         return PlayerUtil.canMove(mc.thePlayer.motionX + offset[0], mc.thePlayer.motionZ + offset[1]);
     }
 
@@ -100,16 +99,26 @@ public class Eagle extends Module {
 
     @Override
     public void verifyValue(String name) {
-        switch (name) {
-            case "min-delay":
-                if (this.minDelay.getValue() > this.maxDelay.getValue()) {
-                    this.maxDelay.setValue(this.minDelay.getValue());
-                }
-                break;
-            case "max-delay":
-                if (this.minDelay.getValue() > this.maxDelay.getValue()) {
-                    this.minDelay.setValue(this.maxDelay.getValue());
-                }
+        if (this.minDelay.getName().equals(name)) {
+            if (this.minDelay.getValue() > this.maxDelay.getValue()) {
+                this.maxDelay.setValue(this.minDelay.getValue());
+            }
+
+        } else if (this.maxDelay.getName().equals(name)) {
+            if (this.minDelay.getValue() > this.maxDelay.getValue()) {
+                this.minDelay.setValue(this.maxDelay.getValue());
+            }
+
+        } else if (this.minOffset.getName().equals(name)) {
+            if (this.minOffset.getValue() > this.maxOffset.getValue()) {
+                this.maxOffset.setValue(this.minOffset.getValue());
+            }
+
+        } else if (this.maxOffset.getName().equals(name)) {
+            if (this.minOffset.getValue() > this.maxOffset.getValue()) {
+                this.minOffset.setValue(this.maxOffset.getValue());
+            }
+
         }
     }
 
