@@ -30,6 +30,7 @@ public class Radar extends Module {
     public final BooleanProperty showPlayers = new BooleanProperty("players", true);
     public final BooleanProperty showFriends = new BooleanProperty("friends", true);
     public final BooleanProperty showEnemies = new BooleanProperty("enemies", true);
+    public final BooleanProperty showTeams = new BooleanProperty("teams", true);
     public final BooleanProperty showBots = new BooleanProperty("bots", false);
     public final BooleanProperty showPVP = new BooleanProperty("show-pvp", false);
     public final FloatProperty markRange = new FloatProperty("mark-range", 4.0f, 0.0f, 10.0f);
@@ -51,6 +52,8 @@ public class Radar extends Module {
                 return this.showBots.getValue();
             } else if (TeamUtil.isFriend(entityPlayer)) {
                 return this.showFriends.getValue();
+            } else if (TeamUtil.isSameTeam(entityPlayer)) {
+                return this.showTeams.getValue();
             } else {
                 return TeamUtil.isTarget(entityPlayer) ? this.showEnemies.getValue() : this.showPlayers.getValue();
             }

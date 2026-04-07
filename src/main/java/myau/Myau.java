@@ -91,6 +91,7 @@ public class Myau {
         moduleManager.modules.put(InventoryClicker.class, new InventoryClicker());
         moduleManager.modules.put(InvManager.class, new InvManager());
         moduleManager.modules.put(InvWalk.class, new InvWalk());
+        moduleManager.modules.put(ItemAlarm.class, new ItemAlarm());
         moduleManager.modules.put(ItemESP.class, new ItemESP());
         moduleManager.modules.put(Jesus.class, new Jesus());
         moduleManager.modules.put(KeepSprint.class, new KeepSprint());
