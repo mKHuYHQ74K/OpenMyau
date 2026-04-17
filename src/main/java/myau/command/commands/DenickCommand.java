@@ -40,9 +40,10 @@ public class DenickCommand extends Command {
                     String uuid = code.contains("profileId\" : \"") ? code.split("profileId\" : \"")[1].split("\"")[0] : "?";
                     ChatUtil.sendRaw(
                             String.format(
-                                    ChatColors.formatColor("%s%s&r -> %s (&o%s&r)&r"),
+                                    ChatColors.formatColor("%s%s (&o%s&r)&r -> %s (&o%s&r)&r"),
                                     ChatColors.formatColor(Myau.clientName),
                                     gameProfile.getName().replace("§", "&"),
+                                    gameProfile.getId().toString(),
                                     name,
                                     uuid
                             )
