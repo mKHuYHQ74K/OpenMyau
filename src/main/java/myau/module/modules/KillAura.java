@@ -97,6 +97,7 @@ public class KillAura extends Module {
     public final BooleanProperty teams;
     public final ModeProperty showTarget;
     public final ModeProperty debugLog;
+    public final BooleanProperty swingJustPreview;
 
     private long getAttackDelay() {
         return this.isBlocking ? (long) (1000.0F / RandomUtil.nextFloat(this.autoBlockMinCPS, this.autoBlockMaxCPS)) : 1000L / RandomUtil.nextLong(this.minCPS, this.maxCPS);
@@ -359,6 +360,7 @@ public class KillAura extends Module {
         this.teams = new BooleanProperty("teams", true);
         this.showTarget = new ModeProperty("show-target", 0, new String[]{"NONE", "DEFAULT", "HUD"});
         this.debugLog = new ModeProperty("debug-log", 0, new String[]{"NONE", "HEALTH"});
+        this.swingJustPreview = new BooleanProperty("swing-just-preview", false);
     }
 
     public EntityLivingBase getTarget() {
@@ -697,7 +699,7 @@ public class KillAura extends Module {
                             event.setPervRotation(rotations[0], 1);
                         }
                     }
-                    if (attack) {
+                    if (attack && (!this.swingJustPreview.getValue() || this.isBoxInAttackRange(this.target.getBox()))) {
                         attacked = this.performAttack(event.getNewYaw(), event.getNewPitch());
                     }
                 }
