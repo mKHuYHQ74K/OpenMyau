@@ -1,5 +1,6 @@
 package myau.module.modules;
 
+import myau.Myau;
 import myau.event.EventTarget;
 import myau.event.types.EventType;
 import myau.event.types.Priority;
@@ -11,10 +12,21 @@ import myau.property.properties.BooleanProperty;
 import myau.property.properties.FloatProperty;
 import myau.property.properties.IntProperty;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.entity.EntityOtherPlayerMP;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.boss.EntityDragon;
+import net.minecraft.entity.boss.EntityWither;
+import net.minecraft.entity.monster.EntityIronGolem;
+import net.minecraft.entity.monster.EntitySilverfish;
+import net.minecraft.entity.passive.EntityAnimal;
+import net.minecraft.entity.passive.EntityBat;
+import net.minecraft.entity.passive.EntitySquid;
+import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.MovingObjectPosition.MovingObjectType;
 import net.minecraft.world.WorldSettings.GameType;
 
+import java.lang.reflect.Field;
 import java.util.Objects;
 
 public class AutoClicker extends Module {
@@ -31,8 +43,10 @@ public class AutoClicker extends Module {
     public final BooleanProperty allowTools = new BooleanProperty("allow-tools", false, this.weaponsOnly::getValue);
     public final BooleanProperty breakBlocks = new BooleanProperty("break-blocks", true);
     public final FloatProperty range = new FloatProperty("range", 3.0F, 3.0F, 8.0F, this.breakBlocks::getValue);
+    public final BooleanProperty hitBoxBorderSize = new BooleanProperty("hit-box-border-size", true, this.breakBlocks::getValue);
     public final FloatProperty hitBoxVertical = new FloatProperty("hit-box-vertical", 0.1F, 0.0F, 1.0F, this.breakBlocks::getValue);
     public final FloatProperty hitBoxHorizontal = new FloatProperty("hit-box-horizontal", 0.2F, 0.0F, 1.0F, this.breakBlocks::getValue);
+    public final BooleanProperty avoidKillAura = new BooleanProperty("avoid-kill-aura", false);
 
     private long getNextClickDelay() {
         return 1000L / RandomUtil.nextLong(this.minCPS.getValue(), this.maxCPS.getValue());
@@ -50,6 +64,7 @@ public class AutoClicker extends Module {
         if (!this.weaponsOnly.getValue()
                 || ItemUtil.hasRawUnbreakingEnchant()
                 || this.allowTools.getValue() && ItemUtil.isHoldingTool()) {
+            if (this.avoidKillAura()) return false;
             if (this.breakBlocks.getValue() && this.isBreakingBlock() && !this.hasValidTarget()) {
                 GameType gameType12 = mc.playerController.getCurrentGameType();
                 return gameType12 != GameType.SURVIVAL && gameType12 != GameType.CREATIVE;
@@ -68,7 +83,7 @@ public class AutoClicker extends Module {
             } else if (entityPlayer.deathTime > 0) {
                 return false;
             } else {
-                float borderSize = entityPlayer.getCollisionBorderSize();
+                float borderSize = this.hitBoxBorderSize.getValue() ? entityPlayer.getCollisionBorderSize() : 0.0f;
                 return RotationUtil.rayTrace(entityPlayer.getEntityBoundingBox().expand(
                         borderSize + this.hitBoxHorizontal.getValue(),
                         borderSize + this.hitBoxVertical.getValue(),
@@ -78,6 +93,33 @@ public class AutoClicker extends Module {
         } else {
             return false;
         }
+    }
+
+    private boolean avoidKillAura() {
+        if (this.avoidKillAura.getValue()) {
+            KillAura killAura = (KillAura) Myau.moduleManager.getModule(KillAura.class);
+            if (killAura.isEnabled()) {
+                if (mc.objectMouseOver != null && mc.objectMouseOver.typeOfHit == MovingObjectType.ENTITY) {
+                    Entity e = mc.objectMouseOver.entityHit;
+                    if (e instanceof EntityOtherPlayerMP) {
+                        return killAura.players.getValue();
+                    } else if (e instanceof EntityDragon || e instanceof EntityWither) {
+                        return killAura.bosses.getValue();
+                    } else if (e instanceof EntityAnimal || e instanceof EntityBat || e instanceof EntitySquid || e instanceof EntityVillager) {
+                        return killAura.animals.getValue();
+                    } else if (e instanceof EntityIronGolem) {
+                        return killAura.golems.getValue();
+                    } else if (e instanceof EntitySilverfish) {
+                        return killAura.silverfish.getValue();
+                    } else {
+                        return killAura.mobs.getValue();
+                    }
+                } else {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private boolean hasValidTarget() {
