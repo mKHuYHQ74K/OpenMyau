@@ -42,6 +42,7 @@ public class ItemAlarm extends Module {
     public final BooleanProperty spawn_egg = new BooleanProperty("spawn_egg", false);
     public final BooleanProperty fishing_rod = new BooleanProperty("fishing_rod", false);
     public final BooleanProperty stick = new BooleanProperty("stick", false);
+    public final BooleanProperty diamond_pickaxe = new BooleanProperty("diamond_pickaxe", false);
     public final BooleanProperty sound = new BooleanProperty("sound", true);
     public final IntProperty cooldown = new IntProperty("cooldown", 30, 1, 300);
     public ItemAlarm() {
@@ -177,6 +178,12 @@ public class ItemAlarm extends Module {
             @Override
             protected boolean contains(ItemAlarm itemAlarm, Item item) {
                 return itemAlarm.stick.getValue() && item == Items.stick;
+            }
+        },
+        diamond_pickaxe {
+            @Override
+            protected boolean contains(ItemAlarm itemAlarm, Item item) {
+                return itemAlarm.diamond_pickaxe.getValue() && item == Items.diamond_pickaxe;
             }
         };
         abstract protected boolean contains(ItemAlarm itemAlarm, Item item);
