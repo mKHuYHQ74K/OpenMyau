@@ -222,6 +222,12 @@ public class KillAura extends Module {
                 );
     }
 
+    private boolean isMouseOverEntity(EntityLivingBase entityLivingBase) {
+        if (mc.objectMouseOver == null) return false;
+        if (mc.objectMouseOver.typeOfHit != MovingObjectType.ENTITY) return false;
+        return mc.objectMouseOver.entityHit == entityLivingBase;
+    }
+
     private boolean isValidTarget(EntityLivingBase entityLivingBase) {
         if (!mc.theWorld.loadedEntityList.contains(entityLivingBase)) {
             return false;
@@ -232,7 +238,7 @@ public class KillAura extends Module {
                 return false;
             } else if (RotationUtil.angleToEntity(entityLivingBase) > this.fov.getValue().floatValue()) {
                 return false;
-            } else if (!this.throughWalls.getValue() && RotationUtil.rayTrace(entityLivingBase, this.attackRange.getValue()) != null) {
+            } else if (!this.throughWalls.getValue() && !this.isMouseOverEntity(entityLivingBase) && RotationUtil.rayTrace(entityLivingBase) != null) {
                 return false;
             } else if (entityLivingBase instanceof EntityOtherPlayerMP) {
                 if (!this.players.getValue()) {
@@ -673,30 +679,21 @@ public class KillAura extends Module {
                 boolean attacked = false;
                 if (this.isBoxInSwingRange(this.target.getBox())) {
                     if (this.rotations.getValue() == 2 || this.rotations.getValue() == 3) { // SILENT || LOCK_VIEW
-                        float[] rotations;
-                        if (this.throughWalls.getValue()) {
-                            rotations = RotationUtil.getRotationsToBox(
+                        if (!this.isMouseOverEntity(this.target.getEntity())) {
+                            float[] rotations = RotationUtil.getRotationsToBox(
                                     this.target.getBox(),
                                     event.getYaw(),
                                     event.getPitch(),
                                     (float) this.angleStep.getValue() + RandomUtil.nextFloat(-5.0F, 5.0F),
                                     (float) this.smoothing.getValue() / 100.0F
                             );
-                        } else {
-                            rotations = RotationUtil.getRotationsToBoxWalls(
-                                    this.target.getBox(),
-                                    event.getYaw(),
-                                    event.getPitch(),
-                                    (float) this.angleStep.getValue() + RandomUtil.nextFloat(-5.0F, 5.0F),
-                                    (float) this.smoothing.getValue() / 100.0F
-                            );
-                        }
-                        event.setRotation(rotations[0], rotations[1], 1);
-                        if (this.rotations.getValue() == 3) { // LOCK_VIEW
-                            Myau.rotationManager.setRotation(rotations[0], rotations[1], 1, true);
-                        }
-                        if (this.moveFix.getValue() != 0 || this.rotations.getValue() == 3) { // SILENT/STRICT || LOCK_VIEW
-                            event.setPervRotation(rotations[0], 1);
+                            event.setRotation(rotations[0], rotations[1], 1);
+                            if (this.rotations.getValue() == 3) { // LOCK_VIEW
+                                Myau.rotationManager.setRotation(rotations[0], rotations[1], 1, true);
+                            }
+                            if (this.moveFix.getValue() != 0 || this.rotations.getValue() == 3) { // SILENT/STRICT || LOCK_VIEW
+                                event.setPervRotation(rotations[0], 1);
+                            }
                         }
                     }
                     if (attack && (!this.swingJustPreview.getValue() || this.isBoxInAttackRange(this.target.getBox()))) {

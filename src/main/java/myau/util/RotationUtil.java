@@ -41,23 +41,6 @@ public class RotationUtil {
         return RotationUtil.getRotations(deltaX, deltaY, deltaZ, yaw, pitch, maxAngle, smoothFactor);
     }
 
-    public static float[] getRotationsToBoxWalls(AxisAlignedBB boundingBox, float yaw, float pitch, float maxAngle, float smoothFactor) {
-        Vec3 eyePos = RotationUtil.mc.thePlayer.getPositionEyes(1.0f);
-        double minTargetY = boundingBox.minY + 0.05 * (boundingBox.maxY - boundingBox.minY);
-        double maxTargetY = boundingBox.minY + 0.75 * (boundingBox.maxY - boundingBox.minY);
-        double midTargetX = (boundingBox.minX + boundingBox.maxX) / 2.0;
-        double midTargetZ = (boundingBox.minZ + boundingBox.maxZ) / 2.0;
-        double selTargetY = Math.min(Math.max(eyePos.yCoord, minTargetY), maxTargetY);
-        double deltaX = midTargetX - eyePos.xCoord;
-        double deltaZ = midTargetZ - eyePos.zCoord;
-        double deltaY = selTargetY - eyePos.yCoord;
-        MovingObjectPosition movingObjectPosition1 = RotationUtil.mc.theWorld.rayTraceBlocks(eyePos, new Vec3(midTargetX, selTargetY, midTargetZ));
-        if (movingObjectPosition1 == null) {
-            return RotationUtil.getRotations(deltaX, deltaY, deltaZ, yaw, pitch, maxAngle, smoothFactor);
-        }
-        return new float[]{yaw, pitch};
-    }
-
     public static float[] getRotationsTo(double targetX, double targetY, double targetZ, float currentYaw, float currentPitch) {
         return RotationUtil.getRotations(targetX, targetY, targetZ, currentYaw, currentPitch, 180.0f, 0.0f);
     }
@@ -84,14 +67,6 @@ public class RotationUtil {
             coords[i] = minCoords[i];
         }
         return new Vec3(coords[0], coords[1], coords[2]);
-    }
-
-    public static Vec3 clampVecToBox(Vec3 vector, AxisAlignedBB boundingBox, float yaw, float pitch, double distance) {
-        Vec3 lookVec = ((IAccessorEntity) RotationUtil.mc.thePlayer).callGetVectorForRotation(pitch, yaw);
-        Vec3 targetPos = vector.addVector(lookVec.xCoord * distance, lookVec.yCoord * distance, lookVec.zCoord * distance);
-        MovingObjectPosition movingObjectPosition = boundingBox.calculateIntercept(vector, targetPos);
-        if (movingObjectPosition != null) return movingObjectPosition.hitVec;
-        return null;
     }
 
     public static double distanceToEntity(Entity entity) {
@@ -147,15 +122,6 @@ public class RotationUtil {
         Vec3 eyePos = RotationUtil.mc.thePlayer.getPositionEyes(1.0f);
         float borderSize = entity.getCollisionBorderSize();
         Vec3 targetPos = RotationUtil.clampVecToBox(eyePos, entity.getEntityBoundingBox().expand(borderSize, borderSize, borderSize));
-        return RotationUtil.mc.theWorld.rayTraceBlocks(eyePos, targetPos);
-    }
-
-    public static MovingObjectPosition rayTrace(Entity entity, double distance) {
-        if (RotationUtil.rayTrace(entity) == null) return null;
-        Vec3 eyePos = RotationUtil.mc.thePlayer.getPositionEyes(1.0f);
-        float borderSize = entity.getCollisionBorderSize();
-        Vec3 targetPos = RotationUtil.clampVecToBox(eyePos, entity.getEntityBoundingBox().expand(borderSize, borderSize, borderSize), RotationUtil.mc.thePlayer.rotationYaw, RotationUtil.mc.thePlayer.rotationPitch, distance);
-        if (targetPos == null) return new MovingObjectPosition(entity, eyePos);
         return RotationUtil.mc.theWorld.rayTraceBlocks(eyePos, targetPos);
     }
 
