@@ -37,6 +37,7 @@ import net.minecraft.network.play.client.C02PacketUseEntity.Action;
 import net.minecraft.network.play.client.C07PacketPlayerDigging;
 import net.minecraft.network.play.client.C08PacketPlayerBlockPlacement;
 import net.minecraft.network.play.client.C09PacketHeldItemChange;
+import net.minecraft.network.play.server.S00PacketKeepAlive;
 import net.minecraft.network.play.server.S06PacketUpdateHealth;
 import net.minecraft.network.play.server.S1CPacketEntityMetadata;
 import net.minecraft.util.*;
@@ -70,6 +71,8 @@ public class KillAura extends Module {
     public final BooleanProperty autoBlockRequirePress;
     public final FloatProperty autoBlockMinCPS;
     public final FloatProperty autoBlockMaxCPS;
+    public final IntProperty autoBlockMinHuntTime;
+    public final IntProperty autoBlockMaxHuntTime;
     public final FloatProperty autoBlockRange;
     public final FloatProperty swingRange;
     public final FloatProperty attackRange;
@@ -334,11 +337,13 @@ public class KillAura extends Module {
         this.mode = new ModeProperty("mode", 0, new String[]{"SINGLE", "SWITCH"});
         this.sort = new ModeProperty("sort", 0, new String[]{"DISTANCE", "HEALTH", "HURT_TIME", "FOV"});
         this.autoBlock = new ModeProperty(
-                "auto-block", 2, new String[]{"NONE", "VANILLA", "SPOOF", "HYPIXEL", "BLINK", "INTERACT", "SWAP", "LEGIT", "FAKE"}
+                "auto-block", 2, new String[]{"NONE", "VANILLA", "SPOOF", "HYPIXEL", "BLINK", "INTERACT", "SWAP", "LEGIT", "FAKE", "HURT_TIME"}
         );
         this.autoBlockRequirePress = new BooleanProperty("auto-block-require-press", false);
         this.autoBlockMinCPS = new FloatProperty("auto-block-min-aps", 8.0F, 1.0F, 20.0F);
         this.autoBlockMaxCPS = new FloatProperty("auto-block-max-aps", 10.0F, 1.0F, 20.0F);
+        this.autoBlockMinHuntTime = new IntProperty("auto-block-min-hunt-time", 9, 1, 20, () -> this.autoBlock.getValue() == 9);
+        this.autoBlockMaxHuntTime = new IntProperty("auto-block-max-hunt-time", 11, 1, 20, () -> this.autoBlock.getValue() == 9);
         this.autoBlockRange = new FloatProperty("auto-block-range", 6.0F, 3.0F, 8.0F);
         this.swingRange = new FloatProperty("swing-range", 3.5F, 3.0F, 6.0F);
         this.attackRange = new FloatProperty("attack-range", 3.0F, 3.0F, 6.0F);
@@ -529,19 +534,33 @@ public class KillAura extends Module {
                                 if (!Myau.playerStateManager.digging && !Myau.playerStateManager.placing) {
                                     switch (this.blockTick) {
                                         case 0:
+                                        case 2:
                                             if (!this.isPlayerBlocking()) {
                                                 swap = true;
                                             }
                                             this.blinkReset = true;
+                                            this.blockTick += 1;
+                                            break;
+                                        case 4:
+                                            this.blinkReset = true;
                                             this.blockTick = 1;
                                             break;
+                                        case 3:
+//                                            if (this.isPlayerBlocking()) {
+//                                                this.stopBlock();
+//                                                attack = false;
+//                                                this.blinkReset = true;
+//                                            }
+//                                            if (this.attackDelayMS <= 50L) {
+//                                                this.blockTick = 0;
+//                                            }
                                         case 1:
                                             if (this.isPlayerBlocking()) {
                                                 this.stopBlock();
                                                 attack = false;
                                             }
                                             if (this.attackDelayMS <= 50L) {
-                                                this.blockTick = 0;
+                                                this.blockTick += 1;
                                             }
                                             break;
                                         default:
@@ -674,6 +693,41 @@ public class KillAura extends Module {
                                     && !Myau.playerStateManager.placing) {
                                 swap = true;
                             }
+                            break;
+                        case 9: // HURT_TIME
+                            if (this.hasValidTarget()) {
+                                if (!Myau.playerStateManager.digging && !Myau.playerStateManager.placing) {
+                                    switch (this.blockTick) {
+                                        case 0:
+                                            if (!this.isPlayerBlocking()) {
+                                                swap = true;
+                                            }
+                                            if (mc.thePlayer.hurtResistantTime > this.autoBlockMaxHuntTime.getValue() || mc.thePlayer.hurtResistantTime < this.autoBlockMinHuntTime.getValue() && mc.thePlayer.hurtResistantTime != 0) {
+                                                this.blockTick = 1;
+                                            }
+                                            break;
+                                        case 1:
+                                            if (this.isPlayerBlocking()) {
+                                                this.stopBlock();
+                                                attack = false;
+                                            }
+                                            if (this.attackDelayMS <= 50L && (mc.thePlayer.hurtResistantTime <= this.autoBlockMaxHuntTime.getValue() && mc.thePlayer.hurtResistantTime >= this.autoBlockMinHuntTime.getValue())) {
+                                                this.blockTick = 0;
+                                            }
+                                            break;
+                                        default:
+                                            this.blockTick = 0;
+                                    }
+                                }
+                                Myau.blinkManager.setBlinkState(false, BlinkModules.AUTO_BLOCK);
+                                this.isBlocking = true;
+                                this.fakeBlockState = false;
+                            } else {
+                                Myau.blinkManager.setBlinkState(false, BlinkModules.AUTO_BLOCK);
+                                this.isBlocking = false;
+                                this.fakeBlockState = false;
+                            }
+                            break;
                     }
                 }
                 boolean attacked = false;
@@ -952,42 +1006,48 @@ public class KillAura extends Module {
                 || this.autoBlock.getValue() == 5
                 || this.autoBlock.getValue() == 6
                 || this.autoBlock.getValue() == 7;
-        if (!this.autoBlock.getName().equals(value)) {
-            if (this.swingRange.getName().equals(value)) {
-                if (this.swingRange.getValue() < this.attackRange.getValue()) {
-                    this.attackRange.setValue(this.swingRange.getValue());
-                }
-            } else if (this.attackRange.getName().equals(value)) {
-                if (this.swingRange.getValue() < this.attackRange.getValue()) {
-                    this.swingRange.setValue(this.attackRange.getValue());
-                }
-            } else if (this.minCPS.getName().equals(value)) {
-                if (this.minCPS.getValue() > this.maxCPS.getValue()) {
-                    this.maxCPS.setValue(this.minCPS.getValue());
-                }
-            } else if (this.autoBlockMinCPS.getName().equals(value)) {
-                if (this.autoBlockMinCPS.getValue() > this.autoBlockMaxCPS.getValue()) {
-                    this.autoBlockMaxCPS.setValue(this.autoBlockMinCPS.getValue());
-                }
-                if(autoBlockMinCPS.getValue() > 10.0F && badCps){
-                    autoBlockMinCPS.setValue(10.0F);
-                }
-            } else if (this.autoBlockMaxCPS.getName().equals(value)) {
-                if (this.autoBlockMinCPS.getValue() > this.autoBlockMaxCPS.getValue()) {
-                    this.autoBlockMinCPS.setValue(this.autoBlockMaxCPS.getValue());
-                }
-                if(autoBlockMaxCPS.getValue() > 10.0F && badCps){
-                    autoBlockMaxCPS.setValue(10.0F);
-                }
-            } else {
-                if (this.maxCPS.getName().equals(value) && this.minCPS.getValue() > this.maxCPS.getValue()) {
-                    this.minCPS.setValue(this.maxCPS.getValue());
-                }
-            }
-        } else {
+        if (this.autoBlock.getName().equals(value)) {
             if (badCps && (this.autoBlockMinCPS.getValue() > 10.0F || this.autoBlockMaxCPS.getValue() > 10.0F)) {
                 this.autoBlockMinCPS.setValue(8.0F);
                 this.autoBlockMaxCPS.setValue(10.0F);
+            }
+        } else if (this.swingRange.getName().equals(value)) {
+            if (this.swingRange.getValue() < this.attackRange.getValue()) {
+                this.attackRange.setValue(this.swingRange.getValue());
+            }
+        } else if (this.attackRange.getName().equals(value)) {
+            if (this.swingRange.getValue() < this.attackRange.getValue()) {
+                this.swingRange.setValue(this.attackRange.getValue());
+            }
+        } else if (this.minCPS.getName().equals(value)) {
+            if (this.minCPS.getValue() > this.maxCPS.getValue()) {
+                this.maxCPS.setValue(this.minCPS.getValue());
+            }
+        } else if (this.autoBlockMinCPS.getName().equals(value)) {
+            if (this.autoBlockMinCPS.getValue() > this.autoBlockMaxCPS.getValue()) {
+                this.autoBlockMaxCPS.setValue(this.autoBlockMinCPS.getValue());
+            }
+            if(autoBlockMinCPS.getValue() > 10.0F && badCps){
+                autoBlockMinCPS.setValue(10.0F);
+            }
+        } else if (this.autoBlockMaxCPS.getName().equals(value)) {
+            if (this.autoBlockMinCPS.getValue() > this.autoBlockMaxCPS.getValue()) {
+                this.autoBlockMinCPS.setValue(this.autoBlockMaxCPS.getValue());
+            }
+            if(autoBlockMaxCPS.getValue() > 10.0F && badCps){
+                autoBlockMaxCPS.setValue(10.0F);
+            }
+        } else if (this.maxCPS.getName().equals(value)) {
+            if (this.maxCPS.getName().equals(value) && this.minCPS.getValue() > this.maxCPS.getValue()) {
+                this.minCPS.setValue(this.maxCPS.getValue());
+            }
+        } else if (this.autoBlockMinHuntTime.getName().equals(value)) {
+            if (this.autoBlockMinHuntTime.getValue() > this.autoBlockMaxHuntTime.getValue()) {
+                this.autoBlockMaxHuntTime.setValue(this.autoBlockMinHuntTime.getValue());
+            }
+        } else if (this.autoBlockMaxHuntTime.getName().equals(value)) {
+            if (this.autoBlockMinHuntTime.getValue() > this.autoBlockMaxHuntTime.getValue()) {
+                this.autoBlockMinHuntTime.setValue(this.autoBlockMaxHuntTime.getValue());
             }
         }
     }

@@ -118,7 +118,6 @@ public class Eagle extends Module {
             if (this.minOffset.getValue() > this.maxOffset.getValue()) {
                 this.minOffset.setValue(this.maxOffset.getValue());
             }
-
         }
     }
 
