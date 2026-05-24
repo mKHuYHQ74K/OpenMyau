@@ -42,6 +42,7 @@ public class InvManager extends Module {
     public final IntProperty projectileSlot = new IntProperty("projectile-slot", 7, 0, 9);
     public final IntProperty projectiles = new IntProperty("projectiles", 64, 16, 2304);
     public final IntProperty goldAppleSlot = new IntProperty("gold-apple-slot", 9, 0, 9);
+    public final IntProperty shearsSlot = new IntProperty("shears-slot", 8, 0, 9);
     public final IntProperty arrow = new IntProperty("arrow", 256, 0, 2304);
     public final IntProperty bowSlot = new IntProperty("bow-slot", 8, 0, 9);
 
@@ -121,6 +122,10 @@ public class InvManager extends Module {
                         if (inventoryProjectileSlot == -1) inventoryProjectileSlot = ItemUtil.findInventorySlot(preferredProjectileHotbarSlot, ItemUtil.ItemType.FishRod);
                         int preferredGoldAppleHotbarSlot = this.goldAppleSlot.getValue() - 1;
                         int inventoryGoldAppleSlot = ItemUtil.findInventorySlot(preferredGoldAppleHotbarSlot, ItemUtil.ItemType.GoldApple);
+
+                        int preferredShearsHotbarSlot = this.shearsSlot.getValue() - 1;
+                        int inventoryShearsSlot = ItemUtil.findInventorySlot(preferredShearsHotbarSlot, ItemUtil.ItemType.Shears);
+
                         int preferredBowHotbarSlot = this.bowSlot.getValue() - 1;
                         int inventoryBowSlot = ItemUtil.findBowInventorySlot(preferredBowHotbarSlot, this.checkDurability.getValue());
                         if (inventoryBowSlot == -1) inventoryBowSlot = ItemUtil.findBowInventorySlot(preferredBowHotbarSlot, false);
@@ -194,6 +199,13 @@ public class InvManager extends Module {
                             usedHotbarSlots.add(preferredGoldAppleHotbarSlot);
                             if (inventoryGoldAppleSlot != preferredGoldAppleHotbarSlot) {
                                 this.clickSlot(mc.thePlayer.inventoryContainer.windowId, this.convertSlotIndex(inventoryGoldAppleSlot), preferredGoldAppleHotbarSlot, 2);
+                                return;
+                            }
+                        }
+                        if (preferredShearsHotbarSlot >= 0 && preferredShearsHotbarSlot <= 8 && !usedHotbarSlots.contains(preferredShearsHotbarSlot) && inventoryShearsSlot != -1) {
+                            usedHotbarSlots.add(preferredShearsHotbarSlot);
+                            if (inventoryShearsSlot != preferredShearsHotbarSlot) {
+                                this.clickSlot(mc.thePlayer.inventoryContainer.windowId, this.convertSlotIndex(inventoryShearsSlot), preferredShearsHotbarSlot, 2);
                                 return;
                             }
                         }

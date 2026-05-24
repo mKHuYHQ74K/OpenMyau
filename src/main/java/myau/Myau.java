@@ -30,6 +30,7 @@ public class Myau {
     public static LagManager lagManager;
     public static PlayerStateManager playerStateManager;
     public static FriendManager friendManager;
+    public static NickManager nickManager;
     public static TargetManager targetManager;
     public static PropertyManager propertyManager;
     public static ModuleManager moduleManager;
@@ -47,6 +48,7 @@ public class Myau {
         lagManager = new LagManager();
         playerStateManager = new PlayerStateManager();
         friendManager = new FriendManager();
+        nickManager = new NickManager();
         targetManager = new TargetManager();
         propertyManager = new PropertyManager();
         moduleManager = new ModuleManager();
@@ -67,6 +69,7 @@ public class Myau {
         moduleManager.modules.put(AntiVoid.class, new AntiVoid());
         moduleManager.modules.put(AutoClicker.class, new AutoClicker());
         moduleManager.modules.put(AutoAnduril.class, new AutoAnduril());
+        moduleManager.modules.put(AutoReconnect.class, new AutoReconnect());
         moduleManager.modules.put(AutoHeal.class, new AutoHeal());
         moduleManager.modules.put(AutoTool.class, new AutoTool());
         moduleManager.modules.put(BedNuker.class, new BedNuker());
@@ -90,6 +93,7 @@ public class Myau {
         moduleManager.modules.put(Indicators.class, new Indicators());
         moduleManager.modules.put(InventoryClicker.class, new InventoryClicker());
         moduleManager.modules.put(InvManager.class, new InvManager());
+        moduleManager.modules.put(ItemCounter.class, new ItemCounter());
         moduleManager.modules.put(InvWalk.class, new InvWalk());
         moduleManager.modules.put(ItemAlarm.class, new ItemAlarm());
         moduleManager.modules.put(ItemESP.class, new ItemESP());
@@ -101,6 +105,7 @@ public class Myau {
         moduleManager.modules.put(LightningTracker.class, new LightningTracker());
         moduleManager.modules.put(LongJump.class, new LongJump());
         moduleManager.modules.put(MCF.class, new MCF());
+        moduleManager.modules.put(MCPick.class, new MCPick());
         moduleManager.modules.put(NameTags.class, new NameTags());
         moduleManager.modules.put(NickHider.class, new NickHider());
         moduleManager.modules.put(NoFall.class, new NoFall());
@@ -134,6 +139,7 @@ public class Myau {
         commandManager.commands.add(new FriendCommand());
         commandManager.commands.add(new HelpCommand());
         commandManager.commands.add(new HideCommand());
+        commandManager.commands.add(new NickCommand());
         commandManager.commands.add(new IgnCommand());
         commandManager.commands.add(new ItemCommand());
         commandManager.commands.add(new ListCommand());
@@ -143,6 +149,7 @@ public class Myau {
         commandManager.commands.add(new TargetCommand());
         commandManager.commands.add(new ToggleCommand());
         commandManager.commands.add(new VclipCommand());
+        commandManager.commands.add(new RemoveConfigCommand());
         for (Module module : moduleManager.modules.values()) {
             ArrayList<Property<?>> properties = new ArrayList<>();
             for (final Field field : module.getClass().getDeclaredFields()) {
@@ -171,6 +178,7 @@ public class Myau {
         if (targetManager.file.exists()) {
             targetManager.load();
         }
+        nickManager.load();
         Runtime.getRuntime().addShutdownHook(new Thread(config::save));
 
         try (InputStreamReader reader = new InputStreamReader(Objects.requireNonNull(Myau.class.getResourceAsStream("/version.json")), StandardCharsets.UTF_8)) {

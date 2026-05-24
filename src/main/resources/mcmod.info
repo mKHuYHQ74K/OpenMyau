@@ -1,10 +1,13 @@
 [
   {
+    "modid": "${modid}",
     "name": "Myau",
+    "description": "Myau client mod for Minecraft 1.8.9",
     "version": "${version}",
-    "mcversion": "1.8.9",
-    "authorList": [
-      "ksyz"
-    ]
+    "mcversion": "${mcversion}",
+    "url": "",
+    "authorList": ["ksyz"],
+    "credits": "",
+    "logoFile": ""
   }
 ]
