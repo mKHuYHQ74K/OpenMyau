@@ -13,8 +13,11 @@ import myau.property.properties.*;
 import myau.property.properties.BooleanProperty;
 import myau.property.properties.ModeProperty;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Gui;
 import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.entity.Entity;
+import org.lwjgl.opengl.GL11;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.boss.EntityDragon;
 import net.minecraft.entity.boss.EntityWither;
@@ -31,6 +34,7 @@ import net.minecraft.scoreboard.Score;
 import net.minecraft.scoreboard.ScoreObjective;
 import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.util.EnumChatFormatting;
+import net.minecraft.util.ResourceLocation;
 import org.apache.commons.lang3.StringUtils;
 
 import java.awt.*;
@@ -207,7 +211,27 @@ public class NameTags extends Module {
                                 if (!renderingItems.isEmpty()) {
                                     int offset = renderingItems.size() * -8;
                                     for (int i = 0; i < renderingItems.size(); i++) {
-                                        RenderUtil.renderItemInGUI(renderingItems.get(i), offset + i * 16, -height - 16);
+                                        int ix = offset + i * 16;
+                                        int iy = -height - 16;
+                                        GlStateManager.pushMatrix();
+                                        GlStateManager.translate(ix, iy, 0.0F);
+                                        GlStateManager.enableDepth();
+                                        RenderHelper.enableGUIStandardItemLighting();
+                                        GlStateManager.disableLighting();
+                                        GlStateManager.enableRescaleNormal();
+                                        float oldZ = mc.getRenderItem().zLevel;
+                                        mc.getRenderItem().zLevel = -100.0F;
+                                        mc.getRenderItem().renderItemIntoGUI(renderingItems.get(i), 0, 0);
+                                        mc.getRenderItem().renderItemOverlays(mc.fontRendererObj, renderingItems.get(i), 0, 0);
+                                        mc.getRenderItem().zLevel = oldZ;
+                                        RenderHelper.disableStandardItemLighting();
+                                        GlStateManager.popMatrix();
+                                        GlStateManager.depthFunc(GL11.GL_LEQUAL);
+                                        GlStateManager.enableAlpha();
+                                        GlStateManager.alphaFunc(GL11.GL_GREATER, 0.5F);
+                                        GlStateManager.enableCull();
+                                        GlStateManager.enableTexture2D();
+                                        GlStateManager.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
                                     }
                                     height += 16;
                                 }
@@ -223,9 +247,20 @@ public class NameTags extends Module {
                                     GlStateManager.scale(0.5F, 0.5F, 1.0F);
                                     int offset = effects.size() * -9;
                                     for (int i = 0; i < effects.size(); i++) {
-                                        RenderUtil.renderPotionEffect(effects.get(i), offset + i * 18, -(height * 2) - 18);
+                                        PotionEffect potionEffect = effects.get(i);
+                                        int idx = Potion.potionTypes[potionEffect.getPotionID()].getStatusIconIndex();
+                                        int ex = offset + i * 18;
+                                        int ey = -(height * 2) - 18;
+                                        GlStateManager.pushMatrix();
+                                        GlStateManager.scale(1.0F, 1.0F, -0.01F);
+                                        mc.getTextureManager().bindTexture(new ResourceLocation("textures/gui/container/inventory.png"));
+                                        Gui.drawModalRectWithCustomSizedTexture(ex, ey, idx % 8 * 18, 198 + idx / 8 * 18, 18, 18, 256.0F, 256.0F);
+                                        GlStateManager.popMatrix();
                                     }
                                     GlStateManager.popMatrix();
+                                    GlStateManager.enableAlpha();
+                                    GlStateManager.enableTexture2D();
+                                    GlStateManager.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
                                 }
                             }
                             if (TeamUtil.isFriend((EntityPlayer) entity)) {
