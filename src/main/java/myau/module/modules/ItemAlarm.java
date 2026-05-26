@@ -1,5 +1,6 @@
 package myau.module.modules;
 
+import myau.Myau;
 import myau.enums.ChatColors;
 import myau.event.EventTarget;
 import myau.event.types.EventType;
@@ -58,6 +59,8 @@ public class ItemAlarm extends Module {
     public final ModeProperty markerPos = new ModeProperty("marker-position", 0, new String[]{"LEFT", "RIGHT"});
     public final IntProperty maxMarkers = new IntProperty("max-markers", 5, 1, 20);
     public final IntProperty markerDuration = new IntProperty("marker-duration", 30, 1, 300);
+    public final IntProperty markerOffsetX = new IntProperty("marker-offset-x", 0, -100, 100);
+    public final IntProperty markerOffsetY = new IntProperty("marker-offset-y", 0, -100, 100);
 
     private final Map<String, TrackedPlayer> tracked = new ConcurrentHashMap<>();
 
@@ -190,6 +193,10 @@ public class ItemAlarm extends Module {
         int elemW = mc.fontRendererObj.getStringWidth(label);
 
         // Billboard transform
+        // Shift outward on X when NameDisplay is active so markers don't overlap centered name text
+        NameDisplay nd = (NameDisplay) Myau.moduleManager.modules.get(NameDisplay.class);
+        boolean nameDisplayActive = nd != null && nd.isEnabled();
+
         GlStateManager.pushMatrix();
         GlStateManager.translate(x, y + (player.isSneaking() ? 0.5 : 0.9), z);
         GlStateManager.rotate(-mc.getRenderManager().playerViewY, 0.0F, 1.0F, 0.0F);
@@ -198,7 +205,7 @@ public class ItemAlarm extends Module {
         GlStateManager.scale(-scale, -scale, scale);
 
         boolean leftSide = markerPos.getValue() == 0;
-        float margin = 4.0F;
+        float margin = (nameDisplayActive ? 14.0F : 4.0F) + markerOffsetX.getValue().floatValue();
         float xOffset, textX, bgLeft, bgRight;
         if (leftSide) {
             xOffset = -(elemW + margin);
@@ -213,7 +220,7 @@ public class ItemAlarm extends Module {
         }
 
         float lineH = useIcon ? 22 : mc.fontRendererObj.FONT_HEIGHT + 4;
-        float yOffset = -stackIndex * lineH;
+        float yOffset = -stackIndex * lineH + this.markerOffsetY.getValue().floatValue();
 
         GlStateManager.translate(xOffset, yOffset, 0.0F);
 

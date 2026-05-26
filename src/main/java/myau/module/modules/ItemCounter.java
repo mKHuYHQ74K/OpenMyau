@@ -4,6 +4,7 @@ import myau.event.EventTarget;
 import myau.events.Render2DEvent;
 import myau.module.Module;
 import myau.property.properties.BooleanProperty;
+import myau.property.properties.IntProperty;
 import myau.property.properties.ModeProperty;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
@@ -26,6 +27,7 @@ public class ItemCounter extends Module {
     public final BooleanProperty arrow = new BooleanProperty("Arrow", true);
     public final BooleanProperty icon = new BooleanProperty("Icon", true);
     public final ModeProperty side = new ModeProperty("Side", 0, new String[]{"LEFT", "RIGHT"});
+    public final IntProperty verticalOffset = new IntProperty("vertical-offset", 0, -200, 200);
 
     public ItemCounter() {
         super("ItemCounter", false);
@@ -92,7 +94,7 @@ public class ItemCounter extends Module {
 
         // Position above hotbar (left or right)
         int panelX = side.getValue() == 1 ? sr.getScaledWidth() - panelW - 4 : 4;
-        int panelY = sr.getScaledHeight() - 22 - panelH - 4;
+        int panelY = sr.getScaledHeight() - 22 - panelH - 4 + verticalOffset.getValue();
 
         // Background panel
         Gui.drawRect(panelX, panelY, panelX + panelW, panelY + panelH, 0x90000000);
