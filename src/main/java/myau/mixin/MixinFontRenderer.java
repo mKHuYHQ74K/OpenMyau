@@ -28,6 +28,7 @@ public abstract class MixinFontRenderer {
             if (antiObfuscate.isEnabled()) {
                 string = antiObfuscate.stripObfuscated(string);
             }
+            string = Myau.nickManager.replaceAll(string);
             NickHider nickHider = (NickHider) Myau.moduleManager.modules.get(NickHider.class);
             return nickHider.isEnabled() ? nickHider.replaceNick(string) : string;
         }
@@ -47,6 +48,7 @@ public abstract class MixinFontRenderer {
             if (antiObfuscate.isEnabled()) {
                 string = antiObfuscate.stripObfuscated(string);
             }
+            string = Myau.nickManager.replaceAll(string);
             NickHider nickHider = (NickHider) Myau.moduleManager.modules.get(NickHider.class);
             return nickHider.isEnabled() ? nickHider.replaceNick(string) : string;
         }

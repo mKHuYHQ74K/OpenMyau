@@ -25,6 +25,7 @@ public class NameDisplay extends Module {
     public final BooleanProperty friends = new BooleanProperty("friends", true);
     public final BooleanProperty enemies = new BooleanProperty("enemies", true);
     public final BooleanProperty bots = new BooleanProperty("bots", false);
+    public final BooleanProperty tabName = new BooleanProperty("tab-name", false);
 
     public NameDisplay() {
         super("NameDisplay", false);
@@ -50,7 +51,17 @@ public class NameDisplay extends Module {
             if (!shouldRender(player)) continue;
             if (!player.ignoreFrustumCheck && !RenderUtil.isInViewFrustum(player.getEntityBoundingBox(), 10.0)) continue;
 
-            String displayName = TeamUtil.stripName(player);
+            String displayName;
+            if (this.tabName.getValue()) {
+                net.minecraft.client.network.NetworkPlayerInfo info = mc.getNetHandler().getPlayerInfo(player.getUniqueID());
+                if (info != null && info.getDisplayName() != null) {
+                    displayName = info.getDisplayName().getFormattedText();
+                } else {
+                    displayName = TeamUtil.stripName(player);
+                }
+            } else {
+                displayName = TeamUtil.stripName(player);
+            }
             if (StringUtils.isBlank(EnumChatFormatting.getTextWithoutFormattingCodes(displayName))) continue;
 
             double x = RenderUtil.lerpDouble(player.posX, player.lastTickPosX, event.getPartialTicks())
