@@ -14,6 +14,9 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 
+import java.net.InetSocketAddress;
+import java.net.Socket;
+
 public class AutoReconnect extends Module {
     private static final Minecraft mc = Minecraft.getMinecraft();
 
@@ -21,6 +24,7 @@ public class AutoReconnect extends Module {
 
     private int timer = -1;
     private ServerData lastServerData;
+    private boolean pinging;
 
     public AutoReconnect() {
         super("AutoReconnect", false);
@@ -28,12 +32,16 @@ public class AutoReconnect extends Module {
 
     @Override
     public void onEnabled() {
-        MinecraftForge.EVENT_BUS.register(this);
+        try {
+            MinecraftForge.EVENT_BUS.register(this);
+        } catch (Throwable ignored) {}
     }
 
     @Override
     public void onDisabled() {
-        MinecraftForge.EVENT_BUS.unregister(this);
+        try {
+            MinecraftForge.EVENT_BUS.unregister(this);
+        } catch (Throwable ignored) {}
         reset();
     }
 
@@ -45,8 +53,9 @@ public class AutoReconnect extends Module {
         if (lastServerData == null) return;
 
         timer = delay.getValue() * 20;
+        pinging = false;
         if (timer <= 0) {
-            reconnect();
+            tryReconnect();
         }
     }
 
@@ -61,7 +70,7 @@ public class AutoReconnect extends Module {
         }
 
         if (--timer == 0) {
-            reconnect();
+            tryReconnect();
         }
     }
 
@@ -70,15 +79,58 @@ public class AutoReconnect extends Module {
         if (!(event.gui instanceof GuiDisconnected)) return;
         if (timer <= 0 || lastServerData == null) return;
 
-        int seconds = timer / 20 + 1;
+        String text;
+        if (pinging) {
+            text = "Pinging server...";
+        } else {
+            int seconds = timer / 20 + 1;
+            text = "Reconnecting in " + seconds + "s...";
+        }
+
         ScaledResolution res = new ScaledResolution(mc);
-        String text = "Reconnecting in " + seconds + "s...";
         mc.fontRendererObj.drawStringWithShadow(
                 text,
                 (float) res.getScaledWidth() / 2 - mc.fontRendererObj.getStringWidth(text) / 2.0F,
                 (float) res.getScaledHeight() / 2 + 30,
                 0x55FF55
         );
+    }
+
+    private void tryReconnect() {
+        if (lastServerData == null) return;
+
+        pinging = true;
+        new Thread(() -> {
+            boolean reachable = pingServer(lastServerData);
+            if (reachable) {
+                mc.addScheduledTask(this::reconnect);
+            } else {
+                // Server not reachable, restart timer
+                mc.addScheduledTask(() -> {
+                    if (mc.currentScreen instanceof GuiDisconnected) {
+                        timer = delay.getValue() * 20;
+                        pinging = false;
+                    }
+                });
+            }
+        }, "AutoReconnect-Ping").start();
+    }
+
+    private boolean pingServer(ServerData serverData) {
+        if (serverData.serverIP == null) return false;
+
+        try {
+            String[] parts = serverData.serverIP.split(":");
+            String host = parts[0];
+            int port = parts.length > 1 ? Integer.parseInt(parts[1]) : 25565;
+
+            try (Socket socket = new Socket()) {
+                socket.connect(new InetSocketAddress(host, port), 3000);
+                return true;
+            }
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private void reconnect() {
@@ -95,5 +147,6 @@ public class AutoReconnect extends Module {
     private void reset() {
         timer = -1;
         lastServerData = null;
+        pinging = false;
     }
 }
