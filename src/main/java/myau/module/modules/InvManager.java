@@ -12,6 +12,7 @@ import myau.util.TimerUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.inventory.GuiInventory;
 import net.minecraft.inventory.ContainerPlayer;
+import net.minecraft.item.ItemAppleGold;
 import net.minecraft.item.ItemStack;
 import net.minecraft.world.WorldSettings.GameType;
 import org.apache.commons.lang3.RandomUtils;
@@ -45,6 +46,8 @@ public class InvManager extends Module {
     public final IntProperty shearsSlot = new IntProperty("shears-slot", 8, 0, 9);
     public final IntProperty arrow = new IntProperty("arrow", 256, 0, 2304);
     public final IntProperty bowSlot = new IntProperty("bow-slot", 8, 0, 9);
+    public final BooleanProperty autoRefill = new BooleanProperty("auto-refill", false);
+    public final IntProperty refillThreshold = new IntProperty("refill-threshold", 32, 1, 128, this.autoRefill::getValue);
 
     private boolean isValidGameMode() {
         GameType gameType = mc.playerController.getCurrentGameType();
@@ -242,6 +245,55 @@ public class InvManager extends Module {
                                         }
                                         if (ItemUtil.isNotSpecialItem(stack) &&( isBlock && currentBlockCount >= this.blocks.getValue() || isProjectile && currentProjectileCount >= this.projectiles.getValue())) {
                                             this.clickSlot(mc.thePlayer.inventoryContainer.windowId, this.convertSlotIndex(i), 1, 4);
+                                            return;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Auto refill: replenish hotbar slots from inventory
+                        if (this.autoRefill.getValue()) {
+                            // Refill blocks
+                            if (preferredBlocksHotbarSlot >= 0 && preferredBlocksHotbarSlot <= 8) {
+                                int currentBlocks = getStackSize(preferredBlocksHotbarSlot);
+                                if (currentBlocks < this.refillThreshold.getValue()) {
+                                    int needed = this.blocks.getValue() - currentBlocks;
+                                    if (needed > 0) {
+                                        for (int i = 9; i < 36; i++) {
+                                            ItemStack stack = mc.thePlayer.inventory.getStackInSlot(i);
+                                            if (stack != null && ItemUtil.isBlock(stack)) {
+                                                this.clickSlot(mc.thePlayer.inventoryContainer.windowId, i, 0, 1);
+                                                return;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            // Refill projectiles
+                            if (preferredProjectileHotbarSlot >= 0 && preferredProjectileHotbarSlot <= 8) {
+                                int currentProjectiles = getStackSize(preferredProjectileHotbarSlot);
+                                if (currentProjectiles < this.refillThreshold.getValue()) {
+                                    int needed = this.projectiles.getValue() - currentProjectiles;
+                                    if (needed > 0) {
+                                        for (int i = 9; i < 36; i++) {
+                                            ItemStack stack = mc.thePlayer.inventory.getStackInSlot(i);
+                                            if (stack != null && ItemUtil.isProjectile(stack)) {
+                                                this.clickSlot(mc.thePlayer.inventoryContainer.windowId, i, 0, 1);
+                                                return;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            // Refill gold apples
+                            if (preferredGoldAppleHotbarSlot >= 0 && preferredGoldAppleHotbarSlot <= 8) {
+                                int currentApples = getStackSize(preferredGoldAppleHotbarSlot);
+                                if (currentApples < this.refillThreshold.getValue()) {
+                                    for (int i = 9; i < 36; i++) {
+                                        ItemStack stack = mc.thePlayer.inventory.getStackInSlot(i);
+                                        if (stack != null && stack.getItem() instanceof ItemAppleGold) {
+                                            this.clickSlot(mc.thePlayer.inventoryContainer.windowId, i, 0, 1);
                                             return;
                                         }
                                     }
