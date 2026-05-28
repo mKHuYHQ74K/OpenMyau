@@ -31,6 +31,7 @@ public class Myau {
     public static PlayerStateManager playerStateManager;
     public static FriendManager friendManager;
     public static NickManager nickManager;
+    public static TagManager tagManager;
     public static TargetManager targetManager;
     public static PropertyManager propertyManager;
     public static ModuleManager moduleManager;
@@ -49,6 +50,7 @@ public class Myau {
         playerStateManager = new PlayerStateManager();
         friendManager = new FriendManager();
         nickManager = new NickManager();
+        tagManager = new TagManager();
         targetManager = new TargetManager();
         propertyManager = new PropertyManager();
         moduleManager = new ModuleManager();
@@ -149,6 +151,7 @@ public class Myau {
         commandManager.commands.add(new ShowCommand());
         commandManager.commands.add(new TargetCommand());
         commandManager.commands.add(new ToggleCommand());
+        commandManager.commands.add(new TagCommand());
         commandManager.commands.add(new VclipCommand());
         commandManager.commands.add(new RemoveConfigCommand());
         for (Module module : moduleManager.modules.values()) {
@@ -180,6 +183,7 @@ public class Myau {
             targetManager.load();
         }
         nickManager.load();
+        tagManager.load();
         Runtime.getRuntime().addShutdownHook(new Thread(config::save));
 
         try (InputStreamReader reader = new InputStreamReader(Objects.requireNonNull(Myau.class.getResourceAsStream("/version.json")), StandardCharsets.UTF_8)) {

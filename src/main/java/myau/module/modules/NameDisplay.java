@@ -26,6 +26,7 @@ public class NameDisplay extends Module {
     public final BooleanProperty enemies = new BooleanProperty("enemies", true);
     public final BooleanProperty bots = new BooleanProperty("bots", false);
     public final BooleanProperty tabName = new BooleanProperty("tab-name", false);
+    public final BooleanProperty tag = new BooleanProperty("tag", true);
 
     public NameDisplay() {
         super("NameDisplay", false);
@@ -106,7 +107,6 @@ public class NameDisplay extends Module {
                     this.shadow.getValue()
             );
             GlStateManager.enableDepth();
-
             GlStateManager.popMatrix();
         }
     }
