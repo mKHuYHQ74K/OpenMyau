@@ -81,6 +81,7 @@ public class ClickGui extends GuiScreen {
         renderModules.add(Myau.moduleManager.getModule(Trajectories.class));
         renderModules.add(Myau.moduleManager.getModule(Radar.class));
         renderModules.add(Myau.moduleManager.getModule(ItemAlarm.class));
+        renderModules.add(Myau.moduleManager.getModule(NameDisplay.class));
 
         List<Module> playerModules = new ArrayList<>();
         playerModules.add(Myau.moduleManager.getModule(AutoHeal.class));
@@ -106,7 +107,10 @@ public class ClickGui extends GuiScreen {
         miscModules.add(Myau.moduleManager.getModule(AntiObbyTrap.class));
         miscModules.add(Myau.moduleManager.getModule(AntiObfuscate.class));
         miscModules.add(Myau.moduleManager.getModule(AutoAnduril.class));
+        miscModules.add(Myau.moduleManager.getModule(AutoReconnect.class));
         miscModules.add(Myau.moduleManager.getModule(InventoryClicker.class));
+        miscModules.add(Myau.moduleManager.getModule(ItemCounter.class));
+        miscModules.add(Myau.moduleManager.getModule(MCPick.class));
 
         Comparator<Module> comparator = Comparator.comparing(m -> m.getName().toLowerCase());
         combatModules.sort(comparator);
@@ -192,91 +196,80 @@ public class ClickGui extends GuiScreen {
     }
 
     public void mouseClicked(int x, int y, int mouseButton) {
-        Iterator<CategoryComponent> btnCat = categoryList.iterator();
-        while (true) {
-            CategoryComponent category;
-            do {
-                do {
-                    if (!btnCat.hasNext()) {
-                        return;
-                    }
+        for (int i = categoryList.size() - 1; i >= 0; i--) {
+            CategoryComponent cat = categoryList.get(i);
 
-                    category = btnCat.next();
-                    if (category.insideArea(x, y) && !category.isHovered(x, y) && !category.mousePressed(x, y) && mouseButton == 0) {
-                        category.mousePressed(true);
-                        category.xx = x - category.getX();
-                        category.yy = y - category.getY();
-                    }
+            if (x < cat.getX() || x > cat.getX() + cat.getWidth()) continue;
+            if (y < cat.getY()) continue;
 
-                    if (category.mousePressed(x, y) && mouseButton == 0) {
-                        category.setOpened(!category.isOpened());
-                    }
+            int headerBottom = cat.getY() + 16;
 
-                    if (category.isHovered(x, y) && mouseButton == 0) {
-                        category.setPin(!category.isPin());
-                    }
-                } while (!category.isOpened());
-            } while (category.getModules().isEmpty());
+            // Click on the title bar
+            if (y <= headerBottom) {
+                if (i != categoryList.size() - 1) {
+                    categoryList.remove(i);
+                    categoryList.add(cat);
+                }
 
-            for (Component c : category.getModules()) {
-                c.mouseDown(x, y, mouseButton);
+                if (cat.insideArea(x, y) && !cat.isHovered(x, y) && !cat.mousePressed(x, y) && mouseButton == 0) {
+                    cat.mousePressed(true);
+                    cat.xx = x - cat.getX();
+                    cat.yy = y - cat.getY();
+                }
+                if (cat.mousePressed(x, y) && mouseButton == 0) {
+                    cat.setOpened(!cat.isOpened());
+                }
+                if (cat.isHovered(x, y) && mouseButton == 0) {
+                    cat.setPin(!cat.isPin());
+                }
+                return;
+            }
+
+            // Click on module content
+            if (cat.isOpened() && !cat.getModules().isEmpty()) {
+                if (i != categoryList.size() - 1) {
+                    categoryList.remove(i);
+                    categoryList.add(cat);
+                }
+                for (Component c : cat.getModules()) {
+                    c.mouseDown(x, y, mouseButton);
+                }
+                return;
             }
         }
-
     }
 
     public void mouseReleased(int x, int y, int mouseButton) {
-        Iterator<CategoryComponent> iterator = categoryList.iterator();
-
-        CategoryComponent categoryComponent;
-        while (iterator.hasNext()) {
-            categoryComponent = iterator.next();
-            if (mouseButton == 0) {
-                categoryComponent.mousePressed(false);
-            }
+        for (CategoryComponent cat : categoryList) {
+            if (mouseButton == 0) cat.mousePressed(false);
         }
 
-        iterator = categoryList.iterator();
+        for (int i = categoryList.size() - 1; i >= 0; i--) {
+            CategoryComponent cat = categoryList.get(i);
+            if (!cat.isOpened() || cat.getModules().isEmpty()) continue;
+            if (y < cat.getY() + 16) continue;
 
-        while (true) {
-            do {
-                do {
-                    if (!iterator.hasNext()) {
-                        return;
-                    }
-
-                    categoryComponent = iterator.next();
-                } while (!categoryComponent.isOpened());
-            } while (categoryComponent.getModules().isEmpty());
-
-            for (Component component : categoryComponent.getModules()) {
+            for (Component component : cat.getModules()) {
                 component.mouseReleased(x, y, mouseButton);
             }
+            return;
         }
     }
 
     public void keyTyped(char typedChar, int key) {
         if (key == 1) {
             this.mc.displayGuiScreen(null);
-        } else {
-            Iterator<CategoryComponent> btnCat = categoryList.iterator();
+            return;
+        }
 
-            while (true) {
-                CategoryComponent cat;
-                do {
-                    do {
-                        if (!btnCat.hasNext()) {
-                            return;
-                        }
+        for (int i = categoryList.size() - 1; i >= 0; i--) {
+            CategoryComponent cat = categoryList.get(i);
+            if (!cat.isOpened() || cat.getModules().isEmpty()) continue;
 
-                        cat = btnCat.next();
-                    } while (!cat.isOpened());
-                } while (cat.getModules().isEmpty());
-
-                for (Component component : cat.getModules()) {
-                    component.keyTyped(typedChar, key);
-                }
+            for (Component component : cat.getModules()) {
+                component.keyTyped(typedChar, key);
             }
+            return;
         }
     }
 

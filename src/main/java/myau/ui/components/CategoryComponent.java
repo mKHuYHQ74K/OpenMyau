@@ -14,8 +14,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class CategoryComponent {
-    private final int MAX_HEIGHT = 300;
-
     public ArrayList<Component> modulesInCategory = new ArrayList<>();
     public String categoryName;
     private boolean categoryOpened;
@@ -31,6 +29,7 @@ public class CategoryComponent {
     private int scroll = 0;
     private double animScroll = 0;
     private int height = 0;
+    private int maxHeight;
 
     public CategoryComponent(String category, List<Module> modules) {
         this.categoryName = category;
@@ -84,18 +83,20 @@ public class CategoryComponent {
     }
 
     public void render(FontRenderer renderer) {
+        ScaledResolution sr = new ScaledResolution(Minecraft.getMinecraft());
+        this.maxHeight = sr.getScaledHeight() - 40;
         this.width = 92;
         update();
         height = 0;
         for (Component moduleRenderManager : this.modulesInCategory) {
             height += moduleRenderManager.getHeight();
         }
-        int maxScroll = Math.max(0, height - MAX_HEIGHT);
+        int maxScroll = Math.max(0, height - maxHeight);
         if (scroll > maxScroll) scroll = maxScroll;
         if (animScroll > maxScroll) animScroll = maxScroll;
         animScroll += (scroll - animScroll) * 0.2;
         if (!this.modulesInCategory.isEmpty() && this.categoryOpened) {
-            int displayHeight = Math.min(height, MAX_HEIGHT);
+            int displayHeight = Math.min(height, maxHeight);
             Gui.drawRect(this.x - 1, this.y, this.x + this.width + 1, this.y + this.bh + displayHeight + 4, new Color(0, 0, 0, 100).getRGB());
         }
         Gui.drawRect((this.x - 2), this.y, (this.x + this.width + 2), (this.y + this.bh + 3), new Color(0, 0, 0, 200).getRGB());
@@ -103,15 +104,18 @@ public class CategoryComponent {
         renderer.drawString(this.categoryOpened ? "-" : "+", (float) (this.x + marginX), (float) ((double) this.y + marginY), Color.white.getRGB(), false);
         if (this.categoryOpened && !this.modulesInCategory.isEmpty()) {
             int renderHeight = 0;
-            ScaledResolution sr = new ScaledResolution(Minecraft.getMinecraft());
             double scale = sr.getScaleFactor();
-            int bottom = this.y + this.bh + MAX_HEIGHT + 3;
+            int contentTop = this.y + this.bh + 3;
+            int contentBottom = contentTop + maxHeight - 1;
             GL11.glEnable(GL11.GL_SCISSOR_TEST);
-            GL11.glScissor((int) (this.x * scale), (int) ((sr.getScaledHeight() - bottom) * scale), (int) (this.width * scale), (int) (MAX_HEIGHT * scale));
+            GL11.glScissor((int) ((this.x + 1) * scale),
+                    (int) ((sr.getScaledHeight() - contentBottom) * scale),
+                    (int) ((this.width - 2) * scale),
+                    (int) ((contentBottom - contentTop) * scale));
             for (Component c2 : this.modulesInCategory) {
                 int compHeight = c2.getHeight();
                 if (renderHeight + compHeight > animScroll &&
-                        renderHeight < animScroll + MAX_HEIGHT) {
+                        renderHeight < animScroll + maxHeight) {
                     int drawY = (int) (renderHeight - animScroll);
                     c2.setComponentStartAt(this.bh + 3 + drawY);
                     c2.draw(new AtomicInteger(0));
@@ -119,9 +123,16 @@ public class CategoryComponent {
                 renderHeight += compHeight;
             }
             GL11.glDisable(GL11.GL_SCISSOR_TEST);
-            if (height > MAX_HEIGHT) {
-                float scrollY = (float) this.y + this.bh + 3 + (float) (animScroll * MAX_HEIGHT / height);
-                Gui.drawRect(this.x + this.width - 2, (int) scrollY, this.x + this.width, (int) (scrollY + ((float) MAX_HEIGHT * MAX_HEIGHT / height)), new Color(255, 255, 255, 60).getRGB());
+            if (height > maxHeight) {
+                int trackX = this.x + this.width - 3;
+                float trackY = contentTop;
+                float trackH = contentBottom - contentTop;
+                Gui.drawRect(trackX, (int) trackY,
+                        this.x + this.width, (int) (trackY + trackH), new Color(0, 0, 0, 100).getRGB());
+                float thumbH = Math.max(16, trackH * trackH / height);
+                float thumbY = trackY + (float) ((animScroll / height) * (trackH - thumbH));
+                Gui.drawRect(trackX, (int) thumbY,
+                        this.x + this.width, (int) (thumbY + thumbH), new Color(255, 255, 255, 60).getRGB());
             }
         }
     }
@@ -175,14 +186,12 @@ public class CategoryComponent {
     }
 
     public void onScroll(int mouseX, int mouseY, int scrollAmount) {
-        if (!categoryOpened || height <= MAX_HEIGHT) return;
-
-        int areaTop = this.y + this.bh;
-        int areaBottom = this.y + this.bh + MAX_HEIGHT;
-
-        if (mouseX >= this.x && mouseX <= this.x + width && mouseY >= areaTop && mouseY <= areaBottom) {
+        if (!categoryOpened || height <= maxHeight) return;
+        int contentTop = this.y + this.bh + 3;
+        int contentBottom = contentTop + maxHeight;
+        if (mouseX >= this.x && mouseX <= this.x + width && mouseY >= contentTop && mouseY <= contentBottom) {
             scroll -= scrollAmount * 12;
-            scroll = Math.max(0, Math.min(scroll, height - MAX_HEIGHT));
+            scroll = Math.max(0, Math.min(scroll, height - maxHeight));
         }
     }
 }
