@@ -1,14 +1,9 @@
 package myau.command.commands;
 
-import com.google.common.collect.Iterables;
-import com.mojang.authlib.GameProfile;
-import com.mojang.authlib.properties.Property;
-import myau.Myau;
 import myau.command.Command;
 import myau.enums.ChatColors;
 import myau.util.ChatUtil;
 import myau.util.TeamUtil;
-import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.event.HoverEvent;
 import net.minecraft.item.ItemStack;
@@ -16,12 +11,8 @@ import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.IChatComponent;
 
 import java.awt.*;
-import java.awt.datatransfer.StringSelection;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Base64;
-import java.util.Locale;
 import java.util.stream.Collectors;
 
 public class DumpArmorCommand extends Command {
