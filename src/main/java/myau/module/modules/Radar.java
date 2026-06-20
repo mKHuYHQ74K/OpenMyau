@@ -16,6 +16,8 @@ import net.minecraft.entity.player.EntityPlayer;
 import org.lwjgl.opengl.GL11;
 
 import java.awt.*;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.stream.Collectors;
 
 public class Radar extends Module {
@@ -38,8 +40,14 @@ public class Radar extends Module {
     public final ColorProperty fillColor = new ColorProperty("fill-color", Color.GRAY.getRGB(), 0x40);
     public final ColorProperty outlineColor = new ColorProperty("outline-color", Color.DARK_GRAY.getRGB());
     public final ColorProperty crossColor = new ColorProperty("cross-color", Color.LIGHT_GRAY.getRGB(), 0x80);
+    private final List<Vec2d> points = new ArrayList<>();
     public Radar() {
         super("Radar", false);
+    }
+
+    public void addPoint(double x, double y) {
+        if (!this.isEnabled()) return;
+        points.add(new Vec2d(x, y, 300000, true));
     }
 
     private boolean shouldRender(EntityPlayer entityPlayer) {
@@ -170,6 +178,30 @@ public class Radar extends Module {
                 }
             }
         }
+        List<Vec2d> remove_points = new ArrayList<>();
+        long now_time = System.currentTimeMillis();
+        for (Vec2d vec2d : this.points) {
+            double dx = vec2d.getX() - mc.thePlayer.posX;
+            double dz = vec2d.getY() - mc.thePlayer.posZ;
+
+            double relX = dx * cos + dz * sin;
+            double relY = dz * cos - dx * sin;
+
+            double dist = Math.sqrt(relX * relX + relY * relY);
+            double scale = dist < radarRadius.getValue() / this.radarScale.getValue() ? 1.0F : radarRadius.getValue() / this.radarScale.getValue() / dist;
+            double px = relX * scale * this.radarScale.getValue();
+            double py = relY * scale * this.radarScale.getValue();
+            RenderUtil.fillCircle(px, py, dotRadius.getValue(), 3, Color.RED.getRGB());
+            if (vec2d.getApproach() && dist < 5) {
+                remove_points.add(vec2d);
+            }
+            else if (now_time > vec2d.getTimeout()) {
+                remove_points.add(vec2d);
+            }
+        }
+        for (Vec2d vec2d : remove_points) {
+            this.points.remove(vec2d);
+        }
         RenderUtil.disableRenderState();
         GlStateManager.popMatrix();
     }
@@ -263,5 +295,30 @@ public class Radar extends Module {
         GlStateManager.enableTexture2D();
         GlStateManager.disableBlend();
         GlStateManager.resetColor();
+    }
+    public static class Vec2d {
+        private final double x;
+        private final double y;
+        private final long timeout;
+        private final boolean approach;
+
+        public Vec2d(double x, double y, long timeout, boolean approach) {
+            this.x = x;
+            this.y = y;
+            this.timeout = timeout + System.currentTimeMillis();
+            this.approach = approach;
+        }
+        public double getX() {
+            return this.x;
+        }
+        public double getY() {
+            return this.y;
+        }
+        public long getTimeout() {
+            return timeout;
+        }
+        public boolean getApproach() {
+            return approach;
+        }
     }
 }
