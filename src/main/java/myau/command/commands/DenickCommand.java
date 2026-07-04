@@ -30,8 +30,11 @@ public class DenickCommand extends Command {
         if (args.size() < 2) {
             ChatUtil.sendFormatted(String.format("%sUsage: .%s <&oname&r>&r", Myau.clientName, args.get(0).toLowerCase(Locale.ROOT)));
         } else {
-            NetworkPlayerInfo playerInfo = mc.getNetHandler().getPlayerInfo(ChatColors.formatColor(args.get(1)));
-            if (playerInfo != null) {
+            String search_name = ChatColors.formatColor(args.get(1));
+            boolean searched = false;
+            for (NetworkPlayerInfo playerInfo : mc.getNetHandler().getPlayerInfoMap()) {
+                if (!playerInfo.getGameProfile().getName().equals(search_name)) continue;
+                searched = true;
                 GameProfile gameProfile = playerInfo.getGameProfile();
                 Property property = Iterables.getFirst(gameProfile.getProperties().get("textures"), null);
                 if (property != null) {
@@ -60,7 +63,8 @@ public class DenickCommand extends Command {
                             )
                     );
                 }
-            } else {
+            }
+            if (!searched){
                 ChatUtil.sendRaw(
                         String.format(
                                 ChatColors.formatColor("%sNo entity with name &o%s&r"),

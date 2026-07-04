@@ -370,7 +370,7 @@ public class KillAura extends Module {
         this.silverfish = new BooleanProperty("silverfish", false);
         this.teams = new BooleanProperty("teams", true);
         this.showTarget = new ModeProperty("show-target", 0, new String[]{"NONE", "DEFAULT", "HUD"});
-        this.debugLog = new ModeProperty("debug-log", 0, new String[]{"NONE", "HEALTH"});
+        this.debugLog = new ModeProperty("debug-log", 0, new String[]{"NONE", "HEALTH", "HEALTH2"});
         this.swingJustPreview = new BooleanProperty("swing-just-preview", false);
     }
 
@@ -858,7 +858,7 @@ public class KillAura extends Module {
                     mc.thePlayer.stopUsingItem();
                 }
             }
-            if (this.debugLog.getValue() == 1 && this.isAttackAllowed()) {
+            if (this.debugLog.getValue() == 1 && this.isAttackAllowed() || this.debugLog.getValue() == 2) {
                 if (event.getPacket() instanceof S06PacketUpdateHealth) {
                     float packet = ((S06PacketUpdateHealth) event.getPacket()).getHealth() - mc.thePlayer.getHealth();
                     if (packet != 0.0F && this.lastTickProcessed != mc.thePlayer.ticksExisted) {
